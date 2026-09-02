@@ -1,5 +1,57 @@
 # CHANGELOG
 
+## 0.4.0 — TASK 03 (Token Detail)
+
+### Added
+- `app/(app)/token/[id]/page.js` — full-page single-token deep dive.
+  Looks the id up in `mocks/tokens.js`; renders the same four
+  selected-token panels used on the dashboard (Token Metrics/Risk,
+  Momentum, Long Auction, Microcap Score) plus a token-scoped Signal
+  History filtered by symbol. Async `generateMetadata` sets the page
+  title to the token's symbol.
+- `components/token/TokenDetailHeader.js` — back-to-dashboard link,
+  identity (symbol/name/chain/age), price, `ScoreBadge`, and
+  `SignalBadge` for the full-page header.
+- `components/token/TokenNotFound.js` — plain "no such token" state
+  (matching `RoutePlaceholder`'s restrained style) shown when a
+  `/token/[id]` URL doesn't match any mock token, instead of Next's
+  default 404 page.
+
+### Changed
+- `components/dashboard/SignalHistory.js`: added optional `title`
+  (default `"SIGNAL HISTORY"`) and `emptyMessage` (default
+  `"No signals recorded yet."`) props, plus an explicit empty-state
+  message, so the token detail page can reuse it for a filtered,
+  symbol-scoped history instead of duplicating its markup. Existing
+  dashboard usage is unaffected (defaults match prior hardcoded text).
+- `components/dashboard/OpportunitiesTable.js`: the token symbol in
+  each row is now a link to `/token/{id}` (`event.stopPropagation()`
+  keeps the existing row-click selection behavior working for the
+  rest of the row).
+
+### Verification
+- `npm run lint` — PASS, no warnings.
+- `npm run build` — PASS; `/token/[id]` compiles as a dynamic
+  (server-rendered on demand) route; all other routes unaffected.
+- `npm run dev` — verified manually: `/token/nxa`, `/token/vlt`, and
+  an invalid id (`/token/doesnotexist`) all return HTTP 200 with no
+  server-side errors; the invalid-id case renders `TokenNotFound`
+  rather than a crash or Next's default 404; `/dashboard` HTML
+  confirmed to contain a working `href="/token/nxa"` link.
+
+### Decisions
+- No dependencies added, no charts (`TASK 05` untouched), no realtime
+  data (`TASK 04` untouched), no Score/Risk Engine logic (`TASK
+  06`/`07` untouched) — the detail page renders the same static mock
+  fixtures as the dashboard, just at a dedicated URL.
+- Reused `SelectedTokenPanel`, `MomentumPanel`, `LongAuctionPanel`,
+  and `MicrocapScorePanel` unmodified so the dashboard's inline view
+  and the full-page detail view can never show conflicting numbers
+  for the same token.
+- Row selection in `OpportunitiesTable`/`DashboardWorkspace` (TASK 02)
+  is left as-is; the new symbol link is an additive navigation
+  affordance, not a replacement for inline selection.
+
 ## 0.3.0 — TASK 02 (Dashboard)
 
 ### Added

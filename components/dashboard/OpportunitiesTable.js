@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Card from "@/components/ui/Card";
 import Divider from "@/components/ui/Divider";
 import SectionHeader from "./SectionHeader";
@@ -93,9 +94,13 @@ export default function OpportunitiesTable({ tokens, selectedId, onSelectToken }
                           />
                         )}
                         <div>
-                          <div className="text-xs font-semibold text-text-primary">
+                          <Link
+                            href={`/token/${token.id}`}
+                            onClick={(event) => event.stopPropagation()}
+                            className="text-xs font-semibold text-text-primary underline decoration-transparent underline-offset-2 transition-colors duration-150 hover:decoration-text-muted"
+                          >
                             {token.symbol}
-                          </div>
+                          </Link>
                           <div className="text-[11px] text-text-muted">
                             {token.name}
                           </div>

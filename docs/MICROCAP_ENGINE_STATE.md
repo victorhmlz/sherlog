@@ -1,15 +1,30 @@
 # MICROCAP ENGINE — DEVELOPMENT STATE
 
-**Version:** 0.3.0
+**Version:** 0.4.0
 
 **Current phase:** PHASE 1 — UI / MOCK ENGINE
 
-**Current task:** TASK 02 — DASHBOARD
+**Current task:** TASK 03 — TOKEN DETAIL
 
 **Project status:** COMPLETED
 
 ## Completed
 
+- TASK 03 — TOKEN DETAIL: new full-page route `/token/[id]`
+  (`app/(app)/token/[id]/page.js`) giving each mock token its own
+  shareable URL. Reuses the four TASK 02 selected-token panels
+  (`SelectedTokenPanel`, `MomentumPanel`, `LongAuctionPanel`,
+  `MicrocapScorePanel`) unmodified, plus a token-scoped `SignalHistory`
+  filtered by symbol, under a new `TokenDetailHeader` (back link,
+  identity, price, score, signal). An unmatched id renders the new
+  `TokenNotFound` component instead of a crash or Next's default 404.
+  `SignalHistory` gained optional `title`/`emptyMessage` props (with
+  backward-compatible defaults) to support this reuse.
+  `OpportunitiesTable` rows now link their symbol to `/token/{id}`
+  (`stopPropagation` preserves TASK 02's row-click selection). No
+  charts, realtime data, Score Engine, or Risk Engine logic was added —
+  still 100% static mock data from `mocks/tokens.js` (TASK 04–07
+  remain untouched).
 - TASK 02 — DASHBOARD: `/dashboard` evolved from the TASK 01 UI
   foundation into the operational Microcap Engine dashboard. All data
   remains mock; the mock-data architecture (`mocks/tokens.js` as the
@@ -97,7 +112,7 @@
 
 ## In progress
 
-- Nothing beyond TASK 02 scope is in progress.
+- Nothing beyond TASK 03 scope is in progress.
 
 ## Known issues
 
@@ -168,13 +183,14 @@ filled in when those integrations are actually built.
 - This is a greenfield scaffold, not an audited legacy system — future
   sessions should not assume any business logic, data model, or API
   integration exists beyond what is listed under "Completed" above.
-- TASK 01 and TASK 02 are UI-only. There is still no Score Engine, Risk
-  Engine, database, blockchain/RPC integration, Long/Fomo integration,
-  WebSocket/SSE realtime stream, wallet connection, or trading
-  execution of any kind. All dashboard values (including the score
-  breakdown, auction data, and risk attributes shown on the dashboard)
+- TASK 01, TASK 02, and TASK 03 are UI-only. There is still no Score
+  Engine, Risk Engine, database, blockchain/RPC integration, Long/Fomo
+  integration, WebSocket/SSE realtime stream, wallet connection, or
+  trading execution of any kind. All dashboard and token-detail values
+  (including the score breakdown, auction data, and risk attributes)
   are static mock fixtures from `mocks/tokens.js`.
 
 ## Next task
 
-TASK 03 — TOKEN DETAIL (not started; do not proceed automatically).
+TASK 04 — REALTIME MOCK STREAM (not started; do not proceed
+automatically).
