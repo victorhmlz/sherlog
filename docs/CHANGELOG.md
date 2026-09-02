@@ -1,5 +1,97 @@
 # CHANGELOG
 
+## 0.3.0 — TASK 02 (Dashboard)
+
+### Added
+- `mocks/tokens.js` extended per token with: `chain`, `ageMinutes`,
+  `volume30m`, `holders`, `top10Concentration`, `volumeAcceleration`,
+  `buyerAcceleration`, `uniqueBuyers`, `liquidityTrend`, `auction`
+  (status/actual/expected/efficiency/price), `risk`
+  (liquidityStatus/concentration/contractRisk/exitStatus/
+  suspiciousWallets), and `scoreBreakdown` (8 components summing
+  exactly to the token's `score`). New exports: `mockSignalHistory`,
+  `CHAINS`, `AUCTION_STATUSES`, `SCORE_COMPONENT_MAX`,
+  `SCORE_COMPONENT_LABELS`.
+- `components/ui/Meter.js` — CSS-only horizontal bar meter shared by
+  the Momentum, Long Auction, and Microcap Score panels.
+- `components/dashboard/OpportunityFilters.js` — chain, signal,
+  minimum-score, and auction-status filters plus a reset control.
+  Controlled inputs; filtering logic lives in the parent.
+- `components/dashboard/DashboardWorkspace.js` (client component) —
+  owns filter state and selected-token state; composes the filters,
+  the opportunities table, and the four selected-token panels so
+  selection and filtering stay in sync without a state-management
+  library.
+- `components/dashboard/SelectedTokenPanel.js` — token identity,
+  quantitative snapshot (market cap, liquidity, volume 30m, holders,
+  top-10 concentration, buy pressure, volume/buyer acceleration), and
+  a compact independent risk section.
+- `components/dashboard/MomentumPanel.js` — volume acceleration,
+  buyer acceleration, and buy pressure as bar meters, plus unique
+  buyers and liquidity trend.
+- `components/dashboard/LongAuctionPanel.js` — actual vs. expected
+  auction progress, efficiency, and simulated auction price; handles
+  the "no auction" (`NONE`) state.
+- `components/dashboard/MicrocapScorePanel.js` — total score, tier
+  label, and the full 8-component breakdown as bar meters.
+- `components/dashboard/SignalHistory.js` — static recent-signals log
+  rendered from `mockSignalHistory`.
+
+### Changed
+- `app/(app)/dashboard/page.js` rewritten around the TASK 02
+  information architecture: header → global metrics → market status →
+  opportunities (with filters) + selected-token detail → signal
+  history.
+- `components/dashboard/DashboardHeader.js`: added a "MOCK DATA" badge
+  and a monitored-opportunities count alongside the existing LIVE
+  indicator and last-update timestamp.
+- `components/dashboard/MarketOverview.js`: reworked from a narrow
+  vertical sidebar card into a full-width horizontal status strip to
+  fit its new top-level position in the layout.
+- `components/dashboard/OpportunitiesTable.js`: converted from a
+  self-contained component with internal selection state into a
+  controlled/presentational component (`tokens`, `selectedId`,
+  `onSelectToken` props). Columns extended to TOKEN, CHAIN, AGE,
+  PRICE, MC, LIQUIDITY, VOL 5M, BUY %, VOL ACCEL, SCORE, SIGNAL
+  (replacing the old generic "MOMENTUM %" column with the more
+  specific Volume Acceleration metric); rows sorted by score
+  descending; selected row now also shows an accent marker dot in
+  addition to the background highlight.
+- `components/ui/format.js`: added `formatAge`, `formatMultiplier`,
+  and `formatCount` helpers.
+
+### Verification
+- `npm run lint` — PASS, no warnings.
+- `npm run build` — PASS; all 7 section routes plus `/` and
+  `/_not-found` compile and prerender as static content.
+- `npm run dev` — verified manually: `/dashboard` and all six other
+  section routes return HTTP 200; dashboard HTML confirmed to contain
+  every new section (MOCK DATA badge, MARKET STATUS, TOP
+  OPPORTUNITIES, SELECTED TOKEN, MOMENTUM, LONG AUCTION, MICROCAP
+  SCORE, SIGNAL HISTORY, filter controls); no server-side errors in
+  the dev log across repeated runs.
+- Responsive structure verified by inspecting rendered classes: the
+  opportunities table scrolls horizontally inside its own
+  `overflow-x-auto` container (never the page), and all grids
+  (metrics, selected-token panels, per-panel stat grids) collapse to a
+  single column below their `lg`/`xl`/`sm` breakpoints.
+
+### Decisions
+- No dependencies added — no charting library (bar meters are plain
+  CSS via `Meter`), no state-management library (all filter/selection
+  state is local `useState` in `DashboardWorkspace`).
+- Score component weights displayed in `MicrocapScorePanel` mirror
+  `docs/ARCHITECTURE.md` §6's conceptual weighting, collapsed from 9
+  to 8 buckets (Narrative/Social folded into Fomo) to match this
+  dashboard's display requirements. This is a display-only mock
+  weighting — no Score Engine exists (TASK 06).
+- Risk attributes in `SelectedTokenPanel` are presented as supplied
+  mock data with no derived/calculated risk logic, consistent with
+  Risk Engine being independent future scope (TASK 07).
+- The default selected token is the highest-scoring token in the full
+  (unfiltered) list; changing filters does not change the selection,
+  only which rows are visible in the table.
+
 ## 0.2.0 — TASK 01 (UI Foundation)
 
 ### Added

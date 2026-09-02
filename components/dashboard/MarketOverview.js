@@ -18,7 +18,10 @@ const LIQUIDITY_TONE = {
 
 const MOMENTUM_GLYPH = { up: "\u2191", down: "\u2193", flat: "\u2192" };
 
-/** Compact operational status strip — reads like a terminal, not a marketing card. */
+/**
+ * Compact operational status strip — a single full-width row of stat
+ * items so it reads like a terminal status bar, not a marketing card.
+ */
 export default function MarketOverview({ status }) {
   const momentumGlyph = MOMENTUM_GLYPH[status.momentum] ?? MOMENTUM_GLYPH.flat;
   const momentumTone =
@@ -32,39 +35,38 @@ export default function MarketOverview({ status }) {
     <Card>
       <SectionHeader title="MARKET STATUS" />
       <Divider />
-      <dl className="divide-y divide-line px-4">
-        <Row label="Market activity">
+      <dl className="flex flex-wrap gap-x-8 gap-y-3 px-4 py-3">
+        <Item label="Market activity">
           <StatusIndicator
             label={status.activity}
             tone={ACTIVITY_TONE[status.activity] ?? "neutral"}
           />
-        </Row>
-        <Row label="Momentum">
-          <StatusIndicator
-            label={momentumGlyph}
-            tone={momentumTone}
-          />
-        </Row>
-        <Row label="Liquidity">
+        </Item>
+        <Item label="Momentum">
+          <StatusIndicator label={momentumGlyph} tone={momentumTone} />
+        </Item>
+        <Item label="Liquidity">
           <StatusIndicator
             label={status.liquidity}
             tone={LIQUIDITY_TONE[status.liquidity] ?? "neutral"}
           />
-        </Row>
-        <Row label="Signal density">
+        </Item>
+        <Item label="Signal density">
           <span className="tabular text-xs font-medium text-text-primary">
             {formatPercent(status.signalDensity)}
           </span>
-        </Row>
+        </Item>
       </dl>
     </Card>
   );
 }
 
-function Row({ label, children }) {
+function Item({ label, children }) {
   return (
-    <div className="flex items-center justify-between py-2.5">
-      <dt className="text-xs text-text-secondary">{label}</dt>
+    <div className="flex flex-col gap-1">
+      <dt className="text-[10px] font-medium tracking-wide text-text-muted">
+        {label}
+      </dt>
       <dd>{children}</dd>
     </div>
   );

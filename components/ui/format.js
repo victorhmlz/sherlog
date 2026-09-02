@@ -24,3 +24,23 @@ export function formatCompactUsd(value) {
 export function formatPercent(value) {
   return `${value.toFixed(0)}%`;
 }
+
+/** Format an acceleration multiplier (e.g. volume/buyer acceleration). */
+export function formatMultiplier(value) {
+  if (value === null || value === undefined) return "—";
+  return `${value.toFixed(1)}x`;
+}
+
+/** Format a token age given in minutes into a compact "Xm/Xh/Xd" label. */
+export function formatAge(minutes) {
+  if (minutes === null || minutes === undefined) return "—";
+  if (minutes < 60) return `${minutes}m`;
+  if (minutes < 1440) return `${Math.round(minutes / 60)}h`;
+  return `${Math.round(minutes / 1440)}d`;
+}
+
+/** Format a compact integer count (holders, unique buyers) with separators. */
+export function formatCount(value) {
+  if (value === null || value === undefined) return "—";
+  return value.toLocaleString("en-US");
+}

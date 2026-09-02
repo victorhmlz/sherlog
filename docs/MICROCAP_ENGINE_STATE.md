@@ -1,62 +1,103 @@
 # MICROCAP ENGINE — DEVELOPMENT STATE
 
-**Version:** 0.2.0
+**Version:** 0.3.0
 
 **Current phase:** PHASE 1 — UI / MOCK ENGINE
 
-**Current task:** TASK 01 — UI FOUNDATION
+**Current task:** TASK 02 — DASHBOARD
 
 **Project status:** COMPLETED
 
 ## Completed
 
-- Fresh Next.js 16.3.4 project scaffolded (App Router, JavaScript,
-  Tailwind CSS v4, ESLint 9) — no pre-existing project was found to
-  audit, so TASK 00 initialized one from scratch instead.
-- Target directory architecture created under `app/`, `components/`,
-  `lib/`, `mocks/`, `docs/` (empty placeholders, no business logic yet).
-- `docs/ARCHITECTURE.md`, `docs/ROADMAP.md`,
-  `docs/MICROCAP_ENGINE_STATE.md`, `docs/CHANGELOG.md` created.
-- `npm run build` and `npm run lint` both verified passing on the
-  scaffolded project (after fixing a Google Fonts network dependency
-  that failed the build in this sandbox — see CHANGELOG).
-- `.env.example` created (empty — no environment variables are in use
-  yet since no adapters/database exist).
-- Design system: dark terminal color tokens, spacing/radius scale,
-  tabular-numeral utility, focus-visible ring, thin scrollbars, and a
-  reduced-motion-aware live-pulse keyframe centralized in
-  `app/globals.css` (`@theme inline`), consumed via Tailwind utility
-  classes — no hardcoded hex values in components.
-- Application shell: `AppShell`, `Sidebar`, `Topbar`, `MobileNav`,
-  shared `nav-items.js` — desktop/tablet persistent sidebar, mobile
-  bottom nav strip, `LiveIndicator` in the topbar.
-- Route group `app/(app)/` wraps all seven primary sections in
-  `AppShell` via a single layout: `/dashboard`, `/scanner`,
-  `/signals`, `/watchlist`, `/analytics`, `/paper-trading`,
-  `/settings`. Root `/` redirects to `/dashboard`.
-- `/dashboard` is fully functional per TASK 01 scope: header with mock
-  live/last-update state, four global metric cards, a market status
-  panel, and the top-opportunities table — all sourced from
-  `mocks/tokens.js`, never hardcoded in presentation components.
-- `OpportunitiesTable`: keyboard-accessible, locally selectable rows
-  (no token-detail navigation yet), horizontal scroll contained to the
-  table on small viewports.
-- `ScoreBadge` / `SignalBadge`: score and signal state are always shown
-  as text (number + tier label / state name), never through color
-  alone.
-- The six remaining routes (`scanner`, `signals`, `watchlist`,
-  `analytics`, `paper-trading`, `settings`) render a shared
-  `RoutePlaceholder` — a plain "coming in a future task" state, not a
-  broken or empty page.
-- `npm run lint` and `npm run build` verified passing; all 7 section
-  routes plus `/` and `/_not-found` compile and prerender as static
-  content. `npm run dev` verified serving `/dashboard` and all other
-  routes with 200 responses and no console/hydration errors.
-- No dependencies added beyond the TASK 00 baseline.
+- TASK 02 — DASHBOARD: `/dashboard` evolved from the TASK 01 UI
+  foundation into the operational Microcap Engine dashboard. All data
+  remains mock; the mock-data architecture (`mocks/tokens.js` as the
+  single source of truth, read by presentation components) is retained
+  and extended rather than replaced.
+- Mock data model extended per token (see `mocks/tokens.js`): chain,
+  age, volume30m, holders, top10Concentration, volumeAcceleration,
+  buyerAcceleration, uniqueBuyers, liquidityTrend, a mock Long auction
+  snapshot (status/actual/expected/efficiency/price), an independent
+  risk block (liquidityStatus/concentration/contractRisk/exitStatus/
+  suspiciousWallets), and a scoreBreakdown across 8 components that
+  sums exactly to each token's total score. Added `mockSignalHistory`,
+  `CHAINS`, `AUCTION_STATUSES`, `SCORE_COMPONENT_MAX`,
+  `SCORE_COMPONENT_LABELS`. Component weights mirror the conceptual
+  weighting in `docs/ARCHITECTURE.md` §6 (Narrative/Social folded into
+  Fomo) — no actual Score Engine exists (TASK 06 remains untouched).
+- Dashboard information architecture (per TASK 02 spec): Header →
+  global metrics → Market Status → Opportunities (with filters) +
+  Selected Token detail (Token Metrics, Momentum, Long Auction,
+  Microcap Score) → Signal History.
+- `DashboardHeader`: now shows a "MOCK DATA" badge and the count of
+  monitored opportunities, alongside the existing LIVE indicator and
+  last-update timestamp.
+- `MarketOverview`: reworked into a full-width horizontal status strip
+  (previously a narrow sidebar card) to fit the new top-level section
+  layout.
+- `OpportunitiesTable`: now a controlled/presentational component (no
+  internal state) — sorting and filtering happen in the parent.
+  Columns extended to TOKEN, CHAIN, AGE, PRICE, MC, LIQUIDITY, VOL 5M,
+  BUY %, VOL ACCEL, SCORE, SIGNAL; sorted by score descending; selected
+  row shows an accent marker in addition to the background highlight
+  (never color alone).
+- New `OpportunityFilters` component: Chain, Signal, minimum Score, and
+  Auction status filters plus a Reset button. Pure controlled inputs,
+  local React state only, no state-management library, no backend.
+- New `DashboardWorkspace` (client component): owns filter state and
+  selected-token state, composing `OpportunityFilters`,
+  `OpportunitiesTable`, and the four selected-token panels so
+  selection/filtering stay in sync. The first token by score is
+  selected by default.
+- New `SelectedTokenPanel`: symbol/chain/age/price header, a metrics
+  grid (market cap, liquidity, volume 30m, holders, top-10
+  concentration, buy pressure, volume/buyer acceleration), and a
+  compact independent RISK section (liquidity/concentration/contract/
+  exit status, suspicious wallet count) — risk is presented as-is from
+  mock data, no Risk Engine logic (TASK 07 remains untouched).
+- New `MomentumPanel`: volume acceleration, buyer acceleration, and buy
+  pressure as bar meters, plus unique buyers and liquidity trend —
+  separating raw price movement from underlying demand acceleration
+  per `docs/ARCHITECTURE.md`'s explainability principle.
+- New `LongAuctionPanel`: actual vs. expected progress bars, an
+  efficiency figure, and the simulated auction price. Purely a UI
+  representation of mock `auction` data — no Long adapter, no
+  scraping, no API (TASK 16–17 remain untouched). Handles the `NONE`
+  auction-status case with a plain "no auction data" state.
+- New `MicrocapScorePanel`: total score, tier label, and the full
+  8-component breakdown as bar meters, so "why is this token X/100" is
+  always answerable from the UI — no scoring algorithm implemented.
+- New `SignalHistory`: static list from `mockSignalHistory` (time,
+  token, score, signal badge, outcome) — no persistence, no real
+  backtested performance (TASK 19–21 remain untouched).
+- New shared `ui/Meter` component: a CSS-only horizontal bar meter used
+  by Momentum, Long Auction, and Microcap Score panels. No charting
+  library was added (TASK 05 remains untouched); values are always
+  shown as text alongside the bar.
+- `components/ui/format.js` extended with `formatAge`,
+  `formatMultiplier`, and `formatCount` helpers.
+- `npm run lint` and `npm run build` verified passing after every
+  change; all 7 section routes plus `/` and `/_not-found` compile and
+  prerender as static content.
+- `npm run dev` verified manually: `/dashboard` and all six other
+  section routes return HTTP 200 with no server-side errors in the dev
+  log; dashboard HTML confirmed to contain every new section (MOCK
+  DATA badge, MARKET STATUS, TOP OPPORTUNITIES, SELECTED TOKEN,
+  MOMENTUM, LONG AUCTION, MICROCAP SCORE, SIGNAL HISTORY, filter
+  controls). Responsive structure verified by inspecting rendered
+  classes: the opportunities table scrolls horizontally inside its own
+  `overflow-x-auto` container (not the page), and all grids collapse
+  to a single column below `lg`/`xl` breakpoints.
+- No dependencies added. No files outside `app/(app)/dashboard/`,
+  `components/dashboard/`, `components/ui/`, `mocks/tokens.js`, and
+  `docs/` were modified; the six other section routes
+  (scanner/signals/watchlist/analytics/paper-trading/settings) were
+  not touched.
 
 ## In progress
 
-- Nothing beyond TASK 01 scope is in progress.
+- Nothing beyond TASK 02 scope is in progress.
 
 ## Known issues
 
@@ -127,12 +168,13 @@ filled in when those integrations are actually built.
 - This is a greenfield scaffold, not an audited legacy system — future
   sessions should not assume any business logic, data model, or API
   integration exists beyond what is listed under "Completed" above.
-- TASK 01 is UI-only. There is still no Score Engine, Risk Engine,
-  database, blockchain/RPC integration, Long/Fomo integration,
+- TASK 01 and TASK 02 are UI-only. There is still no Score Engine, Risk
+  Engine, database, blockchain/RPC integration, Long/Fomo integration,
   WebSocket/SSE realtime stream, wallet connection, or trading
-  execution of any kind. All dashboard values are static mock fixtures
-  from `mocks/tokens.js`.
+  execution of any kind. All dashboard values (including the score
+  breakdown, auction data, and risk attributes shown on the dashboard)
+  are static mock fixtures from `mocks/tokens.js`.
 
 ## Next task
 
-TASK 02 — DASHBOARD (not started; do not proceed automatically).
+TASK 03 — TOKEN DETAIL (not started; do not proceed automatically).
