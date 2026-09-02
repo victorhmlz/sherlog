@@ -1,15 +1,34 @@
 # MICROCAP ENGINE — DEVELOPMENT STATE
 
-**Version:** 0.5.0
+**Version:** 0.6.0
 
 **Current phase:** PHASE 1 — UI / MOCK ENGINE
 
-**Current task:** TASK 04 — REALTIME MOCK STREAM
+**Current task:** TASK 05 — CHARTS
 
 **Project status:** COMPLETED
 
 ## Completed
 
+- TASK 05 — CHARTS: added `recharts` (first charting dependency in the
+  project). New `mocks/priceHistory.js:generatePriceHistory(token)`
+  deterministically synthesizes an intraday price/volume series seeded
+  from the token's id (never `Math.random`, so it's stable across
+  renders and requests) — always ending exactly at that token's
+  current `price`/`volume5m`. New `components/charts/PriceChart.js`
+  (area) and `VolumeChart.js` (bar), with a shared dark-themed
+  `ChartTooltip.js`. `/token/[id]` (TASK 03) gained a "PRICE"/"VOLUME
+  (5M)" section between the selected-token panels and Signal History,
+  captioned as simulated history since no persistence layer exists yet
+  (TASK 09/10). Charts were NOT added to the dashboard table or to the
+  Momentum/Long Auction/Score panels (those are bounded 0–100 `Meter`
+  bars, not time series), and are NOT wired to the TASK 04 live stream
+  — `/token/[id]` still renders a static per-request snapshot.
+  `npm run lint`/`npm run build` pass; manually verified the generator
+  respects `MIN_POINTS`/`MAX_POINTS` bounds, matches the token's
+  current price/volume exactly, and is deterministic across repeated
+  calls (no hydration-mismatch risk); dev server renders both charts
+  with no errors.
 - TASK 04 — REALTIME MOCK STREAM: new `lib/realtime/mockStream.js`
   (pure `tickToken`/`tickTokens`, framework-free) and
   `lib/realtime/useMockLiveStream.js` (client hook wrapping a 4s
@@ -134,7 +153,7 @@
 
 ## In progress
 
-- Nothing beyond TASK 04 scope is in progress.
+- Nothing beyond TASK 05 scope is in progress.
 
 ## Known issues
 
@@ -174,6 +193,7 @@ dependencies:
   next: 16.3.4
   react: 19.2.8
   react-dom: 19.2.8
+  recharts: ^3.10
 
 devDependencies:
   @tailwindcss/postcss: ^4
@@ -182,10 +202,11 @@ devDependencies:
   tailwindcss: ^4
 ```
 
-No additional dependencies were added beyond the `create-next-app`
-defaults. No database client, charting library, or WebSocket library
-has been installed yet — these will be added only when a concrete task
-needs them (per project rule: don't install "just in case").
+`recharts` was added in TASK 05 for the token detail page's price/
+volume charts — the first dependency added beyond the `create-next-app`
+defaults. No database client or WebSocket library has been installed
+yet — these will be added only when a concrete task needs them (per
+project rule: don't install "just in case").
 
 ## Environment
 
@@ -205,15 +226,17 @@ filled in when those integrations are actually built.
 - This is a greenfield scaffold, not an audited legacy system — future
   sessions should not assume any business logic, data model, or API
   integration exists beyond what is listed under "Completed" above.
-- TASK 01, TASK 02, TASK 03, and TASK 04 are UI-only. There is still
-  no Score Engine, Risk Engine, database, blockchain/RPC integration,
-  Long/Fomo integration, real WebSocket/SSE connection, wallet
-  connection, or trading execution of any kind. The "realtime" stream
-  added in TASK 04 is a client-side `setInterval` simulation over
-  `mocks/tokens.js` — not a real data source. Score breakdown, auction
-  data, risk attributes, holders, and top-10 concentration remain
-  static mock fixtures even on the dashboard's now-live tokens.
+- TASK 01–05 are UI-only. There is still no Score Engine, Risk Engine,
+  database, blockchain/RPC integration, Long/Fomo integration, real
+  WebSocket/SSE connection, wallet connection, or trading execution of
+  any kind. The "realtime" stream added in TASK 04 is a client-side
+  `setInterval` simulation over `mocks/tokens.js`; the price/volume
+  charts added in TASK 05 read a deterministically generated mock
+  series from `mocks/priceHistory.js` — neither is a real data source,
+  and there is still no persistence layer (TASK 09/10). Score
+  breakdown, auction data, risk attributes, holders, and top-10
+  concentration remain static mock fixtures throughout.
 
 ## Next task
 
-TASK 05 — CHARTS (not started; do not proceed automatically).
+TASK 06 — SCORE ENGINE (not started; do not proceed automatically).

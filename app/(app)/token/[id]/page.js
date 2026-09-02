@@ -5,7 +5,13 @@ import MomentumPanel from "@/components/dashboard/MomentumPanel";
 import LongAuctionPanel from "@/components/dashboard/LongAuctionPanel";
 import MicrocapScorePanel from "@/components/dashboard/MicrocapScorePanel";
 import SignalHistory from "@/components/dashboard/SignalHistory";
+import SectionHeader from "@/components/dashboard/SectionHeader";
+import Card from "@/components/ui/Card";
+import Divider from "@/components/ui/Divider";
+import PriceChart from "@/components/charts/PriceChart";
+import VolumeChart from "@/components/charts/VolumeChart";
 import { mockTokens, mockSignalHistory } from "@/mocks/tokens";
+import { generatePriceHistory } from "@/mocks/priceHistory";
 
 export async function generateMetadata({ params }) {
   const { id } = await params;
@@ -18,13 +24,15 @@ export async function generateMetadata({ params }) {
 }
 
 /**
- * /token/[id] — full-page single-token deep dive (TASK 03). Reuses the
- * same panels shown inline on the dashboard (TASK 02) so the two views
- * never present conflicting numbers, but gives a token its own
- * shareable URL and room for a token-scoped signal history. All data is
- * still static mock fixtures from mocks/tokens.js — no live data,
- * charts (TASK 05), scoring engine (TASK 06), or realtime stream
- * (TASK 04) exists yet.
+ * /token/[id] — full-page single-token deep dive (TASK 03), now with
+ * simulated price/volume charts (TASK 05). Reuses the same panels shown
+ * inline on the dashboard (TASK 02) so the two views never present
+ * conflicting numbers, but gives a token its own shareable URL and room
+ * for a token-scoped signal history plus intraday charts. All data is
+ * still static/simulated mock fixtures from mocks/tokens.js and
+ * mocks/priceHistory.js — no real historical persistence (TASK 09/10),
+ * scoring engine (TASK 06), or realtime stream on this page (TASK 04
+ * only wired up the dashboard) exists yet.
  */
 export default async function TokenDetailPage({ params }) {
   const { id } = await params;
@@ -37,6 +45,7 @@ export default async function TokenDetailPage({ params }) {
   const tokenHistory = mockSignalHistory.filter(
     (entry) => entry.symbol === token.symbol,
   );
+  const priceHistory = generatePriceHistory(token);
 
   return (
     <div className="flex flex-col">
@@ -48,6 +57,29 @@ export default async function TokenDetailPage({ params }) {
           <MomentumPanel token={token} />
           <LongAuctionPanel token={token} />
           <MicrocapScorePanel token={token} />
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <p className="px-1 text-[11px] text-text-muted">
+            Simulated intraday history — no persisted snapshots yet (see
+            TASK 09/10).
+          </p>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <Card>
+              <SectionHeader title="PRICE" />
+              <Divider />
+              <div className="px-2 pb-3 pt-2">
+                <PriceChart data={priceHistory} />
+              </div>
+            </Card>
+            <Card>
+              <SectionHeader title="VOLUME (5M)" />
+              <Divider />
+              <div className="px-2 pb-3 pt-2">
+                <VolumeChart data={priceHistory} />
+              </div>
+            </Card>
+          </div>
         </div>
 
         <SignalHistory

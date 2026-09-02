@@ -50,3 +50,10 @@ export function formatClockTime(date) {
   const pad = (n) => String(n).padStart(2, "0");
   return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 }
+
+/** Format a "minutes before now" offset for chart x-axis labels ("now", "-12m", "-1.5h"). */
+export function formatRelativeMinutes(minutesAgo) {
+  if (minutesAgo <= 0.05) return "now";
+  if (minutesAgo < 60) return `-${Math.round(minutesAgo)}m`;
+  return `-${(minutesAgo / 60).toFixed(1)}h`;
+}

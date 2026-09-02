@@ -1,5 +1,67 @@
 # CHANGELOG
 
+## 0.6.0 — TASK 05 (Charts)
+
+### Added
+- **Dependency added:** `recharts` (^3.10) — the first charting
+  library in the project, per `docs/ARCHITECTURE.md`'s target
+  `components/charts/` directory and the "no charting library" note
+  carried since TASK 02.
+- `mocks/priceHistory.js` — `generatePriceHistory(token)`: a
+  deterministic (seeded from `token.id`, not `Math.random`) mock
+  intraday price/volume series. Spans the token's real `ageMinutes`
+  (6–36 points, ~5-minute buckets) and always ends exactly at that
+  token's current `price`/`volume5m`, so the chart never contradicts
+  the rest of the UI. This is a mock fixture generator (like
+  `mocks/tokens.js`), not business logic — there is still no
+  persistence layer (`docs/ARCHITECTURE.md` §5, TASK 09/10 remain
+  unimplemented), so the "history" is synthesized, not stored.
+- `components/charts/PriceChart.js` — area chart of the simulated
+  price series.
+- `components/charts/VolumeChart.js` — bar chart of the simulated 5m
+  volume series (illustrative only; not reconciled against
+  `volume30m`).
+- `components/charts/ChartTooltip.js` — shared dark-theme tooltip
+  renderer for both charts (recharts' default tooltip is a plain white
+  box that clashes with the app's dark surfaces).
+- `components/ui/format.js`: added `formatRelativeMinutes(minutesAgo)`
+  ("now" / "-12m" / "-1.5h") for chart x-axis labels.
+- `app/(app)/token/[id]/page.js`: new "PRICE" / "VOLUME (5M)" card
+  section between the existing selected-token panels and Signal
+  History, with an explicit "Simulated intraday history — no persisted
+  snapshots yet" caption.
+
+### Verification
+- `npm run lint` — PASS, no warnings.
+- `npm run build` — PASS; route table unchanged.
+- Manual check: `generatePriceHistory` produces exactly 6 points for a
+  14-minute-old token and 36 for a 182-minute-old one (bounds working
+  as intended); the last point's price/volume equal the token's
+  `price`/`volume5m` exactly for both; two calls for the same token
+  return byte-identical output (confirms determinism — no
+  server/client hydration mismatch risk).
+- `npm run dev` — verified manually: `/token/nxa`, `/token/vlt` return
+  HTTP 200 and their HTML contains a rendered
+  `recharts-responsive-container`, the "PRICE"/"VOLUME (5M)" section
+  headers, and the simulated-history caption; `/token/doesnotexist`
+  and `/dashboard` unaffected (still HTTP 200, no server errors in the
+  dev log).
+
+### Decisions
+- Charts were added only to `/token/[id]` (TASK 03), not the dashboard
+  table or the Momentum/Long Auction/Microcap Score panels — those
+  panels' `Meter` bar visualizations (TASK 02) represent bounded 0–100
+  quantities, which a time-series chart doesn't fit; a price/volume
+  history is meaningful only for a single token's own page.
+- The generated history is intentionally NOT wired to the TASK 04 live
+  stream — `/token/[id]` still renders a static (per-request,
+  deterministic) snapshot. Combining live ticking with a growing chart
+  history is a reasonable future step but wasn't requested here and
+  would mix this task's scope with TASK 04's.
+- No OHLC/candlestick charting, no zoom/pan, no timeframe selector —
+  a single fixed intraday window keeps this task's scope to "a chart
+  exists and is readable," matching Phase 1's UI/mock-engine framing.
+
 ## 0.5.0 — TASK 04 (Realtime Mock Stream)
 
 ### Added
