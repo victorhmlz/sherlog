@@ -1,12 +1,12 @@
 # MICROCAP ENGINE — DEVELOPMENT STATE
 
-**Version:** 0.1.0
+**Version:** 0.2.0
 
-**Current phase:** PHASE 0 — FOUNDATION
+**Current phase:** PHASE 1 — UI / MOCK ENGINE
 
-**Current task:** TASK 00 — AUDIT + INITIALIZATION (this task)
+**Current task:** TASK 01 — UI FOUNDATION
 
-**Project status:** COMPLETED (TASK 00 scope only)
+**Project status:** COMPLETED
 
 ## Completed
 
@@ -22,10 +22,41 @@
   that failed the build in this sandbox — see CHANGELOG).
 - `.env.example` created (empty — no environment variables are in use
   yet since no adapters/database exist).
+- Design system: dark terminal color tokens, spacing/radius scale,
+  tabular-numeral utility, focus-visible ring, thin scrollbars, and a
+  reduced-motion-aware live-pulse keyframe centralized in
+  `app/globals.css` (`@theme inline`), consumed via Tailwind utility
+  classes — no hardcoded hex values in components.
+- Application shell: `AppShell`, `Sidebar`, `Topbar`, `MobileNav`,
+  shared `nav-items.js` — desktop/tablet persistent sidebar, mobile
+  bottom nav strip, `LiveIndicator` in the topbar.
+- Route group `app/(app)/` wraps all seven primary sections in
+  `AppShell` via a single layout: `/dashboard`, `/scanner`,
+  `/signals`, `/watchlist`, `/analytics`, `/paper-trading`,
+  `/settings`. Root `/` redirects to `/dashboard`.
+- `/dashboard` is fully functional per TASK 01 scope: header with mock
+  live/last-update state, four global metric cards, a market status
+  panel, and the top-opportunities table — all sourced from
+  `mocks/tokens.js`, never hardcoded in presentation components.
+- `OpportunitiesTable`: keyboard-accessible, locally selectable rows
+  (no token-detail navigation yet), horizontal scroll contained to the
+  table on small viewports.
+- `ScoreBadge` / `SignalBadge`: score and signal state are always shown
+  as text (number + tier label / state name), never through color
+  alone.
+- The six remaining routes (`scanner`, `signals`, `watchlist`,
+  `analytics`, `paper-trading`, `settings`) render a shared
+  `RoutePlaceholder` — a plain "coming in a future task" state, not a
+  broken or empty page.
+- `npm run lint` and `npm run build` verified passing; all 7 section
+  routes plus `/` and `/_not-found` compile and prerender as static
+  content. `npm run dev` verified serving `/dashboard` and all other
+  routes with 200 responses and no console/hydration errors.
+- No dependencies added beyond the TASK 00 baseline.
 
 ## In progress
 
-- Nothing beyond TASK 00 scope is in progress.
+- Nothing beyond TASK 01 scope is in progress.
 
 ## Known issues
 
@@ -85,10 +116,6 @@ No `.env` file exists yet (no secrets, no live data sources). A
 variables (e.g. `DATABASE_URL`, `RPC_URL`, adapter API keys) — to be
 filled in when those integrations are actually built.
 
-## Next task
-
-TASK 01 — UI FOUNDATION (not started; do not proceed automatically).
-
 ## Important warnings
 
 - No real trading, wallet connection, private keys, seed phrases, or
@@ -100,3 +127,12 @@ TASK 01 — UI FOUNDATION (not started; do not proceed automatically).
 - This is a greenfield scaffold, not an audited legacy system — future
   sessions should not assume any business logic, data model, or API
   integration exists beyond what is listed under "Completed" above.
+- TASK 01 is UI-only. There is still no Score Engine, Risk Engine,
+  database, blockchain/RPC integration, Long/Fomo integration,
+  WebSocket/SSE realtime stream, wallet connection, or trading
+  execution of any kind. All dashboard values are static mock fixtures
+  from `mocks/tokens.js`.
+
+## Next task
+
+TASK 02 — DASHBOARD (not started; do not proceed automatically).
