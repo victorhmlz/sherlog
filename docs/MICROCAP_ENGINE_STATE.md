@@ -1,15 +1,37 @@
 # MICROCAP ENGINE — DEVELOPMENT STATE
 
-**Version:** 0.4.0
+**Version:** 0.5.0
 
 **Current phase:** PHASE 1 — UI / MOCK ENGINE
 
-**Current task:** TASK 03 — TOKEN DETAIL
+**Current task:** TASK 04 — REALTIME MOCK STREAM
 
 **Project status:** COMPLETED
 
 ## Completed
 
+- TASK 04 — REALTIME MOCK STREAM: new `lib/realtime/mockStream.js`
+  (pure `tickToken`/`tickTokens`, framework-free) and
+  `lib/realtime/useMockLiveStream.js` (client hook wrapping a 4s
+  `setInterval`) simulate a live feed on top of the same
+  `mocks/tokens.js` fixtures — still no WebSocket/SSE connection
+  (mechanism remains DECISION REQUIRED, see `docs/ARCHITECTURE.md`
+  §8). New `components/dashboard/LiveDashboard.js` (client) owns the
+  stream and now backs `/dashboard`: the opportunities table,
+  selected-token panels, and the header's `LiveIndicator`/"Last
+  update" timestamp all tick live. `DashboardHeader` takes
+  `lastUpdate`/`active` as props now (defaulting to the old static
+  fixture/`true`). Only price, market cap, liquidity (+ derived
+  `liquidityTrend`), 5m/30m volume, buy pressure,
+  volume/buyer acceleration, unique buyers, and age tick — `score`,
+  `scoreBreakdown`, `risk`, `holders`/`top10Concentration`, and
+  `auction` are untouched (those belong to TASK 06/07/14/16-17).
+  Global metric cards, Market Status, Signal History, and `/token/[id]`
+  (TASK 03) remain static — no well-defined live derivation for them
+  yet. `npm run lint`/`npm run build` pass; server-side render
+  verified error-free with a correctly advancing `HH:MM:SS` timestamp;
+  the actual post-hydration client-side ticking was not verified in a
+  real browser (none available in this environment).
 - TASK 03 — TOKEN DETAIL: new full-page route `/token/[id]`
   (`app/(app)/token/[id]/page.js`) giving each mock token its own
   shareable URL. Reuses the four TASK 02 selected-token panels
@@ -112,7 +134,7 @@
 
 ## In progress
 
-- Nothing beyond TASK 03 scope is in progress.
+- Nothing beyond TASK 04 scope is in progress.
 
 ## Known issues
 
@@ -183,14 +205,15 @@ filled in when those integrations are actually built.
 - This is a greenfield scaffold, not an audited legacy system — future
   sessions should not assume any business logic, data model, or API
   integration exists beyond what is listed under "Completed" above.
-- TASK 01, TASK 02, and TASK 03 are UI-only. There is still no Score
-  Engine, Risk Engine, database, blockchain/RPC integration, Long/Fomo
-  integration, WebSocket/SSE realtime stream, wallet connection, or
-  trading execution of any kind. All dashboard and token-detail values
-  (including the score breakdown, auction data, and risk attributes)
-  are static mock fixtures from `mocks/tokens.js`.
+- TASK 01, TASK 02, TASK 03, and TASK 04 are UI-only. There is still
+  no Score Engine, Risk Engine, database, blockchain/RPC integration,
+  Long/Fomo integration, real WebSocket/SSE connection, wallet
+  connection, or trading execution of any kind. The "realtime" stream
+  added in TASK 04 is a client-side `setInterval` simulation over
+  `mocks/tokens.js` — not a real data source. Score breakdown, auction
+  data, risk attributes, holders, and top-10 concentration remain
+  static mock fixtures even on the dashboard's now-live tokens.
 
 ## Next task
 
-TASK 04 — REALTIME MOCK STREAM (not started; do not proceed
-automatically).
+TASK 05 — CHARTS (not started; do not proceed automatically).

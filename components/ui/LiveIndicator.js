@@ -1,7 +1,8 @@
 /**
- * Purely visual "live" indicator (pulsing dot + label). This is a static
- * mock state for TASK 01 — no realtime connection exists yet. A future
- * task will drive `active` from an actual data stream.
+ * Purely visual "live" indicator (pulsing dot + label). `active` is now
+ * driven by `useMockLiveStream` (TASK 04) on the dashboard — still a
+ * client-side simulation, not a real WebSocket/SSE connection (that
+ * mechanism remains DECISION REQUIRED, see docs/ARCHITECTURE.md §8).
  */
 export default function LiveIndicator({ active = true, className = "" }) {
   return (

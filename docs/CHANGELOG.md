@@ -1,5 +1,86 @@
 # CHANGELOG
 
+## 0.5.0 — TASK 04 (Realtime Mock Stream)
+
+### Added
+- `lib/realtime/mockStream.js` — framework-free simulation core:
+  `tickToken()`/`tickTokens()` advance a mock token by one fictional
+  tick (bounded random deltas to price, market cap, liquidity — with
+  `liquidityTrend` derived from the liquidity delta's sign —, 5m/30m
+  volume, buy pressure, volume/buyer acceleration, unique buyers, and
+  elapsed age), plus the `MOCK_STREAM_INTERVAL_MS` constant (4000ms).
+  Deliberately does not touch `score`/`scoreBreakdown` (no Score
+  Engine — TASK 06), `risk` (independent Risk Engine — TASK 07),
+  `holders`/`top10Concentration` (holder analysis — TASK 14), or
+  `auction` (Long adapter — TASK 16/17): ticking those would fake
+  future engines' output rather than simulate a market feed.
+- `lib/realtime/useMockLiveStream.js` — "use client" hook wrapping a
+  `setInterval` that calls `tickTokens` every
+  `MOCK_STREAM_INTERVAL_MS` and refreshes a clock-formatted
+  `lastUpdate` string; returns `{ tokens, lastUpdate, active }`. No
+  WebSocket/SSE connection exists — the realtime *mechanism* is still
+  DECISION REQUIRED per `docs/ARCHITECTURE.md` §8; this is a
+  client-side simulation layered on the same static mock fixtures.
+- `components/dashboard/LiveDashboard.js` — new client component that
+  seeds `useMockLiveStream` from the initial `mockTokens` snapshot and
+  re-renders `DashboardHeader` (LIVE indicator + last-update
+  timestamp), `DashboardWorkspace` (opportunities table + selected
+  token panels), the metric cards, market status, and signal history
+  around it.
+- `components/ui/format.js`: added `formatClockTime(date)` (24h
+  `HH:MM:SS`), used for the live-refreshing "Last update" timestamp.
+
+### Changed
+- `app/(app)/dashboard/page.js`: now a thin server component that
+  reads `mocks/tokens.js` (still the single source of truth) and
+  renders `LiveDashboard` with the initial snapshot, instead of
+  assembling the dashboard sections directly.
+- `components/dashboard/DashboardHeader.js`: `lastUpdate` and `active`
+  are now props (defaulting to the old static `mockLastUpdate` / `true`
+  for backward compatibility) instead of an imported fixture constant,
+  so the live stream can drive them.
+- `components/ui/LiveIndicator.js`: doc comment updated — `active` is
+  now actually driven by `useMockLiveStream`, no longer a hardcoded
+  mock value (the component's own code and rendering are unchanged).
+
+### Verification
+- `npm run lint` — PASS, no warnings.
+- `npm run build` — PASS; route table unchanged (`/dashboard` still
+  static, `/token/[id]` still dynamic).
+- `npm run dev` — verified manually: `/dashboard` returns HTTP 200
+  with no server-side errors; server-rendered HTML confirmed to
+  contain the correct initial (un-ticked) mock values and a
+  `HH:MM:SS`-formatted "Last update" timestamp that reflects the
+  request time; two requests several seconds apart show the timestamp
+  advancing, confirming `formatClockTime`/the hook wiring behave
+  correctly server-side. The interval's client-side ticking behavior
+  itself (post-hydration, in a real browser event loop) was NOT
+  verified with an actual browser — no browser/screenshot tool is
+  available in this environment; the `setInterval`/`setState` pattern
+  follows the same idioms already used elsewhere in this codebase.
+
+### Decisions
+- No dependencies added — the "stream" is a plain `setInterval`, not a
+  WebSocket/SSE client or state-management library.
+- Only the opportunities table + selected-token panels and the
+  header's LIVE indicator/timestamp were made live. The four top
+  metric cards (`mockGlobalMetrics`) and the Market Status strip
+  (`mockMarketStatus`) describe a wider market than just the 10
+  fixture tokens shown in the table, and Signal History is an
+  already-historical log — none of those have a well-defined live
+  derivation yet, so they stay static fixtures, unchanged from
+  TASK 02.
+- The `/token/[id]` detail page (TASK 03) was intentionally left
+  static in this task — it has no `LiveIndicator` today, so it wasn't
+  part of the affordance TASK 04 closes the loop on. Wiring it to the
+  same stream is a natural follow-up but was not requested.
+- `lastUpdate`'s initial value now comes from the real clock
+  (`formatClockTime(new Date())`) rather than the old fictional
+  `"12:42:31"` fixture string, since it is driven by an actual
+  `Date` from this point on. `mocks/tokens.js:mockLastUpdate` is kept
+  as `DashboardHeader`'s backward-compatible default for any future
+  static (non-live) usage.
+
 ## 0.4.0 — TASK 03 (Token Detail)
 
 ### Added

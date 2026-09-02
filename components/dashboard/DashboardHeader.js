@@ -4,11 +4,18 @@ import { mockLastUpdate } from "@/mocks/tokens";
 
 /**
  * Page-level heading for /dashboard: identity, monitoring state, and an
- * explicit mock/live distinction. The LIVE indicator simulates a live
- * feed for presentation purposes only — the MOCK DATA badge makes clear
- * that no real data source is connected yet (see docs/ARCHITECTURE.md).
+ * explicit mock/live distinction. `lastUpdate`/`active` are driven by
+ * `useMockLiveStream` (TASK 04) from the parent client component; they
+ * default to the old static fixture so this component still renders
+ * sensibly if ever used without a live stream wired up. The MOCK DATA
+ * badge makes clear that no real data source is connected yet (see
+ * docs/ARCHITECTURE.md).
  */
-export default function DashboardHeader({ monitoredCount }) {
+export default function DashboardHeader({
+  monitoredCount,
+  lastUpdate = mockLastUpdate,
+  active = true,
+}) {
   return (
     <div className="flex flex-col gap-3 border-b border-line px-4 py-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
@@ -25,9 +32,9 @@ export default function DashboardHeader({ monitoredCount }) {
       </div>
 
       <div className="flex items-center gap-4">
-        <LiveIndicator active />
+        <LiveIndicator active={active} />
         <span className="tabular text-[11px] text-text-muted">
-          Last update: {mockLastUpdate}
+          Last update: {lastUpdate}
         </span>
       </div>
     </div>

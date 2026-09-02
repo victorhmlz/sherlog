@@ -44,3 +44,9 @@ export function formatCount(value) {
   if (value === null || value === undefined) return "—";
   return value.toLocaleString("en-US");
 }
+
+/** Format a Date as a 24h "HH:MM:SS" clock string (matches the header's "Last update" style). */
+export function formatClockTime(date) {
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+}
