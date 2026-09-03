@@ -8,7 +8,20 @@
 // docs/ARCHITECTURE.md §4–5 for the target NormalizedTokenData /
 // AuctionData / Signal shapes) — presentation components should only
 // ever read this shape, never hardcode values.
+//
+// `score` / `scoreBreakdown` are no longer hand-authored fixture values
+// (TASK 06): each token below carries only its raw feature fields plus
+// a `scoreBreakdown: { fomo, price }` seed (the two components with no
+// real feature source yet), and `mockTokens` maps every raw fixture
+// through `lib/scoring/scoreEngine.js:computeScore` to produce the
+// final `score`/`scoreBreakdown` shown across the UI. Score tier
+// constants/helpers are re-exported from that module — it is now their
+// canonical home, not this one.
 // -----------------------------------------------------------------------
+
+import { computeScore, SCORE_TIERS, getScoreTier, SCORE_COMPONENT_MAX, SCORE_COMPONENT_LABELS } from "@/lib/scoring/scoreEngine";
+
+export { SCORE_TIERS, getScoreTier, SCORE_COMPONENT_MAX, SCORE_COMPONENT_LABELS };
 
 /** Ordered list of discrete signal states a token can carry. */
 export const SIGNAL_STATES = [
@@ -20,59 +33,11 @@ export const SIGNAL_STATES = [
   "EXTREME",
 ];
 
-/** Score → tier label mapping used by ScoreBadge. Ranges are inclusive. */
-export const SCORE_TIERS = [
-  { min: 0, max: 49, label: "IGNORE" },
-  { min: 50, max: 59, label: "WATCH" },
-  { min: 60, max: 69, label: "WATCH+" },
-  { min: 70, max: 79, label: "SETUP B" },
-  { min: 80, max: 89, label: "SETUP A" },
-  { min: 90, max: 100, label: "SETUP A+" },
-];
-
-/** Resolve a 0–100 score to its tier definition. */
-export function getScoreTier(score) {
-  return (
-    SCORE_TIERS.find((tier) => score >= tier.min && score <= tier.max) ??
-    SCORE_TIERS[0]
-  );
-}
-
 /** Fictional chains represented in the mock opportunity set. */
 export const CHAINS = ["SOL", "ETH", "BASE", "ARB", "BSC"];
 
 /** Long auction lifecycle states used for the Auction status filter. */
 export const AUCTION_STATUSES = ["LIVE", "ENDED", "NONE"];
-
-/**
- * Mock Microcap Score component weights (max points per component).
- * Mirrors the conceptual weighting in docs/ARCHITECTURE.md §6, collapsed
- * to the 8 components this dashboard displays (Narrative/Social folded
- * into Fomo). These are display weights for mock data only — no actual
- * Score Engine exists yet (see TASK 06).
- */
-export const SCORE_COMPONENT_MAX = {
-  auction: 20,
-  volume: 15,
-  buyers: 15,
-  pressure: 10,
-  liquidity: 10,
-  holders: 10,
-  fomo: 15,
-  price: 5,
-};
-
-/** Display labels for each score component, in presentation order. */
-export const SCORE_COMPONENT_LABELS = {
-  auction: "Long Auction",
-  volume: "Volume",
-  buyers: "Buyers",
-  pressure: "Pressure",
-  liquidity: "Liquidity",
-  holders: "Holders",
-  fomo: "Fomo",
-  price: "Price",
-};
 
 /** Fictional last-update timestamp for the LIVE header (static mock). */
 export const mockLastUpdate = "12:42:31";
@@ -105,11 +70,14 @@ export const mockMarketStatus = {
  * - holders: holders, top10Concentration
  * - auction: mock Long auction snapshot (see AUCTION_STATUSES)
  * - risk: independent of score — see docs/ARCHITECTURE.md §7
- * - score / scoreBreakdown: sums to `score`; components per
- *   SCORE_COMPONENT_MAX
- * - signal: one of SIGNAL_STATES (distinct from the score tier label)
+ * - scoreBreakdown: seed for the two components with no real feature
+ *   source yet (`fomo`, `price` — see lib/scoring/scoreEngine.js). The
+ *   other six components, and the final `score`, are COMPUTED (not
+ *   authored here) by the `.map(computeScore)` below TASK 06 onward.
+ * - signal: one of SIGNAL_STATES (distinct from the score tier label —
+ *   Signal Engine, TASK 08, does not exist yet either)
  */
-export const mockTokens = [
+const rawMockTokens = [
   {
     id: "nxa",
     symbol: "NXA",
@@ -136,8 +104,7 @@ export const mockTokens = [
       exitStatus: "CLEAR",
       suspiciousWallets: 0,
     },
-    score: 91,
-    scoreBreakdown: { auction: 17, volume: 14, buyers: 14, pressure: 9, liquidity: 9, holders: 9, fomo: 14, price: 5 },
+    scoreBreakdown: { fomo: 14, price: 5 },
     signal: "SETUP A",
   },
   {
@@ -166,8 +133,7 @@ export const mockTokens = [
       exitStatus: "CLEAR",
       suspiciousWallets: 0,
     },
-    score: 84,
-    scoreBreakdown: { auction: 17, volume: 13, buyers: 13, pressure: 8, liquidity: 8, holders: 8, fomo: 13, price: 4 },
+    scoreBreakdown: { fomo: 13, price: 4 },
     signal: "SETUP A",
   },
   {
@@ -196,8 +162,7 @@ export const mockTokens = [
       exitStatus: "SLIPPAGE RISK",
       suspiciousWallets: 1,
     },
-    score: 73,
-    scoreBreakdown: { auction: 15, volume: 11, buyers: 11, pressure: 7, liquidity: 7, holders: 7, fomo: 11, price: 4 },
+    scoreBreakdown: { fomo: 11, price: 4 },
     signal: "SETUP B",
   },
   {
@@ -226,8 +191,7 @@ export const mockTokens = [
       exitStatus: "CLEAR",
       suspiciousWallets: 0,
     },
-    score: 88,
-    scoreBreakdown: { auction: 18, volume: 13, buyers: 13, pressure: 9, liquidity: 9, holders: 9, fomo: 13, price: 4 },
+    scoreBreakdown: { fomo: 13, price: 4 },
     signal: "SETUP A",
   },
   {
@@ -256,8 +220,7 @@ export const mockTokens = [
       exitStatus: "ILLIQUID",
       suspiciousWallets: 3,
     },
-    score: 47,
-    scoreBreakdown: { auction: 9, volume: 7, buyers: 7, pressure: 5, liquidity: 5, holders: 5, fomo: 7, price: 2 },
+    scoreBreakdown: { fomo: 7, price: 2 },
     signal: "IGNORE",
   },
   {
@@ -286,8 +249,7 @@ export const mockTokens = [
       exitStatus: "SLIPPAGE RISK",
       suspiciousWallets: 0,
     },
-    score: 65,
-    scoreBreakdown: { auction: 12, volume: 10, buyers: 10, pressure: 7, liquidity: 7, holders: 6, fomo: 10, price: 3 },
+    scoreBreakdown: { fomo: 10, price: 3 },
     signal: "WATCH+",
   },
   {
@@ -316,8 +278,7 @@ export const mockTokens = [
       exitStatus: "CLEAR",
       suspiciousWallets: 0,
     },
-    score: 96,
-    scoreBreakdown: { auction: 19, volume: 14, buyers: 14, pressure: 10, liquidity: 10, holders: 10, fomo: 14, price: 5 },
+    scoreBreakdown: { fomo: 14, price: 5 },
     signal: "EXTREME",
   },
   {
@@ -346,8 +307,7 @@ export const mockTokens = [
       exitStatus: "ILLIQUID",
       suspiciousWallets: 2,
     },
-    score: 54,
-    scoreBreakdown: { auction: 12, volume: 8, buyers: 8, pressure: 5, liquidity: 5, holders: 5, fomo: 8, price: 3 },
+    scoreBreakdown: { fomo: 8, price: 3 },
     signal: "WATCH",
   },
   {
@@ -376,8 +336,7 @@ export const mockTokens = [
       exitStatus: "CLEAR",
       suspiciousWallets: 0,
     },
-    score: 79,
-    scoreBreakdown: { auction: 15, volume: 12, buyers: 12, pressure: 8, liquidity: 8, holders: 8, fomo: 12, price: 4 },
+    scoreBreakdown: { fomo: 12, price: 4 },
     signal: "SETUP B",
   },
   {
@@ -406,11 +365,23 @@ export const mockTokens = [
       exitStatus: "CLEAR",
       suspiciousWallets: 0,
     },
-    score: 82,
-    scoreBreakdown: { auction: 18, volume: 12, buyers: 12, pressure: 8, liquidity: 8, holders: 8, fomo: 12, price: 4 },
+    scoreBreakdown: { fomo: 12, price: 4 },
     signal: "SETUP A",
   },
 ];
+
+/**
+ * The exported token list every component reads. Each raw fixture above
+ * is passed through `computeScore` (TASK 06 — see
+ * lib/scoring/scoreEngine.js) to produce its final `score` and full
+ * 8-component `scoreBreakdown` — the six computed components come from
+ * the fixture's own feature fields; `fomo`/`price` pass through the
+ * seed values above unchanged (no adapter/model exists for them yet).
+ */
+export const mockTokens = rawMockTokens.map((token) => {
+  const { score, breakdown } = computeScore(token);
+  return { ...token, score, scoreBreakdown: breakdown };
+});
 
 /**
  * Compact mock signal history log for the dashboard's Signal History

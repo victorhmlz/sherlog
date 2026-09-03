@@ -1,5 +1,85 @@
 # CHANGELOG
 
+## 0.7.0 — TASK 06 (Score Engine)
+
+### Added
+- `lib/scoring/scoreEngine.js` — the project's first real Score Engine,
+  per `docs/ARCHITECTURE.md` §6 (V1 weights, not final — real
+  calibration is TASK 21). Exports `computeScore(token)`, returning
+  `{ score, breakdown, tier }` where `breakdown` always sums exactly to
+  `score` (explainability requirement). Also the new canonical home for
+  `SCORE_COMPONENT_MAX`, `SCORE_COMPONENT_LABELS`, `SCORE_TIERS`, and
+  `getScoreTier` (moved here from `mocks/tokens.js`, which now
+  re-exports them unchanged for backward compatibility).
+  - Six of the eight components — `auction`, `volume`, `buyers`,
+    `pressure`, `liquidity`, `holders` (80/100 of the weight) — are
+    genuinely computed from a token's existing feature fields (Long
+    auction snapshot, volume/buyer acceleration, buy pressure,
+    liquidity + trend, top-10 concentration).
+  - The remaining two — `fomo` (no Long/Fomo/external-signal adapter
+    yet, TASK 16–18) and `price` (no price-structure model yet) — have
+    no real feature source, so the engine does not invent a formula
+    for them: it passes through `token.scoreBreakdown.fomo`/`.price`
+    unchanged rather than fabricating an input that doesn't exist.
+
+### Changed
+- `mocks/tokens.js`: token fixtures no longer hand-author `score`/a
+  full `scoreBreakdown` — each raw fixture now carries only a
+  `scoreBreakdown: { fomo, price }` seed (the two pass-through
+  components), and the exported `mockTokens` maps every fixture through
+  `computeScore` to produce the real `score`/`scoreBreakdown` shown
+  across the UI. `SCORE_COMPONENT_MAX`/`LABELS`/`SCORE_TIERS`/
+  `getScoreTier` are now re-exports of `lib/scoring/scoreEngine.js` —
+  no consuming component (`ScoreBadge.js`, `MicrocapScorePanel.js`)
+  needed to change, since they still import from `@/mocks/tokens`.
+- `lib/realtime/mockStream.js` (TASK 04): `tickToken` now recomputes
+  `score`/`scoreBreakdown` via `computeScore` after mutating a token's
+  live fields, closing the gap TASK 04 explicitly deferred ("no Score
+  Engine exists yet — TASK 06"). The dashboard's score, tier badge, and
+  score-sorted table order now genuinely track the live mock stream
+  instead of staying frozen while volume/pressure/liquidity move around
+  them. `holders`/`top10Concentration`/`auction` are still not ticked
+  (TASK 07/14/16-17 territory) — the engine reads their existing static
+  values as inputs for the `holders`/`auction` components either way.
+
+### Verification
+- `npm run lint` — PASS, no warnings.
+- `npm run build` — PASS; route table unchanged.
+- Verified for all 10 mock tokens: `score` equals the exact sum of
+  `scoreBreakdown`'s 8 values (no rounding drift), computed via a
+  standalone script mirroring the engine's logic before wiring it in.
+- `npm run dev` — verified manually: `/token/nxa`'s rendered HTML shows
+  the engine's actual output (score 82/100, "SETUP A", Long Auction
+  16/20 — matching the standalone verification exactly, not the old
+  hand-authored 91/100); `/dashboard`, `/token/hlx`, `/token/mrbl`
+  unaffected in terms of HTTP status; no server errors.
+
+### Decisions
+- No dependencies added — pure arithmetic, no ML/statistics library.
+- Recomputed scores intentionally do NOT match the old hand-authored
+  fixture numbers token-for-token (e.g. NXA: 91 → 82, QRN: 73 → 39).
+  This is expected and correct: the old numbers were narrative
+  placeholders invented for TASK 01/02 demo purposes, and a genuinely
+  computed V1 score is not obligated to reproduce them. Relative
+  ordering is broadly preserved (HLX highest, MRBL/PTRA lowest).
+- Each mock token's `signal` field (SIGNAL_STATES) was left as-authored
+  and is NOT recalculated from the new score/tier — the project's own
+  established design already treats signal and score-tier as
+  independent (`mocks/tokens.js`'s own field-group comment: "distinct
+  from the score tier label"), with reconciling them being Signal
+  Engine's job (TASK 08), not this one. Some mismatch between a token's
+  authored `signal` and its new computed tier (e.g. PTRA: tier IGNORE,
+  signal WATCH) is expected and acceptable for now.
+- The Score Engine remains fully independent of the Risk Engine
+  (TASK 07, not yet implemented) — `computeScore` never reads
+  `token.risk`, consistent with docs/ARCHITECTURE.md §7's "a token can
+  score high and still carry high risk" principle.
+- Auction scoring blends efficiency (60%) and raw completion (40%) as a
+  simple, explicit V1 heuristic; liquidity uses a log scale (order-of-
+  magnitude differences matter far more than small deltas at high
+  liquidity) plus a small trend adjustment. Both are documented in code
+  as V1, not final, matching ARCHITECTURE.md §6's own framing.
+
 ## 0.6.0 — TASK 05 (Charts)
 
 ### Added

@@ -1,15 +1,45 @@
 # MICROCAP ENGINE — DEVELOPMENT STATE
 
-**Version:** 0.6.0
+**Version:** 0.7.0
 
 **Current phase:** PHASE 1 — UI / MOCK ENGINE
 
-**Current task:** TASK 05 — CHARTS
+**Current task:** TASK 06 — SCORE ENGINE
 
 **Project status:** COMPLETED
 
 ## Completed
 
+- TASK 06 — SCORE ENGINE: new `lib/scoring/scoreEngine.js` —
+  `computeScore(token)`, the project's first real Score Engine, per
+  `docs/ARCHITECTURE.md` §6 (V1 weights, calibration deferred to
+  TASK 21). Computes 6 of 8 components (auction, volume, buyers,
+  pressure, liquidity, holders — 80/100 weight) from a token's actual
+  feature fields; the other 2 (`fomo`, `price` — 20/100 weight) have no
+  real feature source yet (no Long/Fomo/external adapter, TASK 16–18;
+  no price-structure model), so they pass through an authored seed
+  unchanged rather than being invented. `SCORE_COMPONENT_MAX/LABELS`,
+  `SCORE_TIERS`, and `getScoreTier` moved here (canonical home);
+  `mocks/tokens.js` re-exports them unchanged, so `ScoreBadge.js` and
+  `MicrocapScorePanel.js` needed no changes. `mocks/tokens.js` fixtures
+  now carry only a `scoreBreakdown: { fomo, price }` seed each — the
+  exported `mockTokens` maps every fixture through `computeScore` to
+  produce the real, explainable `score`/`scoreBreakdown`. TASK 04's
+  `tickToken` now also calls `computeScore` after each tick, so the
+  live dashboard's score/tier/sort-order genuinely track the mock
+  stream (closing the gap TASK 04 explicitly deferred to this task).
+  No dependencies added. Verified for all 10 tokens: `score` equals the
+  exact sum of `scoreBreakdown`; `npm run lint`/`build` pass; dev-server
+  HTML confirmed to show the engine's real computed values (e.g. NXA:
+  82/100, "SETUP A", Long Auction 16/20 — not the old hand-authored
+  91/100). Recomputed scores intentionally differ from the old
+  hand-authored fixture numbers (narrative placeholders, not a
+  regression) while roughly preserving relative ranking. Each token's
+  `signal` field was left as-authored, independent of the new
+  score/tier by the project's own established design (reconciling them
+  is Signal Engine's job — TASK 08). Score Engine reads nothing from
+  `token.risk` — stays independent of Risk Engine (TASK 07) per
+  ARCHITECTURE.md §7.
 - TASK 05 — CHARTS: added `recharts` (first charting dependency in the
   project). New `mocks/priceHistory.js:generatePriceHistory(token)`
   deterministically synthesizes an intraday price/volume series seeded
@@ -153,7 +183,7 @@
 
 ## In progress
 
-- Nothing beyond TASK 05 scope is in progress.
+- Nothing beyond TASK 06 scope is in progress.
 
 ## Known issues
 
@@ -226,17 +256,20 @@ filled in when those integrations are actually built.
 - This is a greenfield scaffold, not an audited legacy system — future
   sessions should not assume any business logic, data model, or API
   integration exists beyond what is listed under "Completed" above.
-- TASK 01–05 are UI-only. There is still no Score Engine, Risk Engine,
-  database, blockchain/RPC integration, Long/Fomo integration, real
-  WebSocket/SSE connection, wallet connection, or trading execution of
-  any kind. The "realtime" stream added in TASK 04 is a client-side
-  `setInterval` simulation over `mocks/tokens.js`; the price/volume
-  charts added in TASK 05 read a deterministically generated mock
-  series from `mocks/priceHistory.js` — neither is a real data source,
-  and there is still no persistence layer (TASK 09/10). Score
-  breakdown, auction data, risk attributes, holders, and top-10
-  concentration remain static mock fixtures throughout.
+- TASK 01–06 are UI/engine-only in the sense that no real data source
+  exists. There is still no Risk Engine, database, blockchain/RPC
+  integration, Long/Fomo integration, real WebSocket/SSE connection,
+  wallet connection, or trading execution of any kind. TASK 06's Score
+  Engine (`lib/scoring/scoreEngine.js`) is real, deterministic scoring
+  logic — not mock data — but 2 of its 8 components (`fomo`, `price`)
+  still pass through an authored seed because no adapter/model exists
+  for them yet. The "realtime" stream (TASK 04) is a client-side
+  `setInterval` simulation; the price/volume charts (TASK 05) read a
+  deterministically generated mock series — neither is a real data
+  source, and there is still no persistence layer (TASK 09/10). Auction
+  data, risk attributes, holders, and top-10 concentration remain
+  static mock fixtures throughout.
 
 ## Next task
 
-TASK 06 — SCORE ENGINE (not started; do not proceed automatically).
+TASK 07 — RISK ENGINE (not started; do not proceed automatically).
