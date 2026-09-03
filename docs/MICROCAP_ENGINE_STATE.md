@@ -1,14 +1,43 @@
 # MICROCAP ENGINE — DEVELOPMENT STATE
 
-**Version:** 0.7.0
+**Version:** 0.8.0
 
 **Current phase:** PHASE 1 — UI / MOCK ENGINE
 
-**Current task:** TASK 06 — SCORE ENGINE
+**Current task:** TASK 07 — RISK ENGINE
 
 **Project status:** COMPLETED
 
 ## Completed
+
+- TASK 07 — RISK ENGINE: new `lib/risk/riskEngine.js` —
+  `computeRisk(token)`, the project's first real Risk Engine, per
+  `docs/ARCHITECTURE.md` §7. Fully independent of the Score Engine (no
+  cross-reads either direction — a token can score high and still be
+  flagged high risk, per architecture). Computes `liquidityStatus`
+  (from `liquidity` + `liquidityTrend`) and `concentration` (from
+  `top10Concentration`) from real feature fields; derives `exitStatus`
+  directly from `liquidityStatus`; passes through `contractRisk` and
+  `suspiciousWallets` unchanged (no bytecode-analysis or wallet-
+  clustering adapter exists). New aggregate `overall` (LOW/MODERATE/
+  HIGH) + `noTrade` boolean implements ARCHITECTURE.md §7's "Score 90 +
+  Risk HIGH = NO TRADE" rule directly. `mocks/tokens.js` fixtures now
+  seed only `{ contractRisk, suspiciousWallets }` per token; `mockTokens`
+  maps every fixture through `computeRisk` (alongside TASK 06's
+  `computeScore`). TASK 04's `tickToken` also recomputes risk live now.
+  Small UI addition: `SelectedTokenPanel.js`'s RISK section header shows
+  the new `overall` tier and a "· NO TRADE" marker when applicable. No
+  dependencies added. Verified: computed `liquidityStatus`/
+  `concentration` match the old hand-authored labels for 9 of 10 tokens
+  (only NXA shifts HEALTHY→THIN); `npm run lint`/`build` pass;
+  dev-server HTML confirmed MRBL renders "HIGH · NO TRADE".
+
+- **Hotfix (post-TASK 06, pre-TASK 07):** fixed a hydration mismatch on
+  `/dashboard`'s "Last update" timestamp, caused by
+  `useMockLiveStream`'s initial state being computed from `new Date()`
+  during both SSR and client hydration (two different moments). See
+  CHANGELOG 0.7.1 for details. Version number not bumped for this —
+  it's a correctness fix to existing TASK 04 code, not a new task.
 
 - TASK 06 — SCORE ENGINE: new `lib/scoring/scoreEngine.js` —
   `computeScore(token)`, the project's first real Score Engine, per
@@ -183,7 +212,7 @@
 
 ## In progress
 
-- Nothing beyond TASK 06 scope is in progress.
+- Nothing beyond TASK 07 scope is in progress.
 
 ## Known issues
 
@@ -256,20 +285,21 @@ filled in when those integrations are actually built.
 - This is a greenfield scaffold, not an audited legacy system — future
   sessions should not assume any business logic, data model, or API
   integration exists beyond what is listed under "Completed" above.
-- TASK 01–06 are UI/engine-only in the sense that no real data source
-  exists. There is still no Risk Engine, database, blockchain/RPC
-  integration, Long/Fomo integration, real WebSocket/SSE connection,
-  wallet connection, or trading execution of any kind. TASK 06's Score
-  Engine (`lib/scoring/scoreEngine.js`) is real, deterministic scoring
-  logic — not mock data — but 2 of its 8 components (`fomo`, `price`)
-  still pass through an authored seed because no adapter/model exists
-  for them yet. The "realtime" stream (TASK 04) is a client-side
-  `setInterval` simulation; the price/volume charts (TASK 05) read a
-  deterministically generated mock series — neither is a real data
-  source, and there is still no persistence layer (TASK 09/10). Auction
-  data, risk attributes, holders, and top-10 concentration remain
-  static mock fixtures throughout.
+- TASK 01–07 are UI/engine-only in the sense that no real data source
+  exists. There is still no database, blockchain/RPC integration,
+  Long/Fomo integration, real WebSocket/SSE connection, wallet
+  connection, or trading execution of any kind. TASK 06's Score Engine
+  and TASK 07's Risk Engine are real, deterministic, independent logic
+  — not mock data — but each still passes 2 of its inputs through an
+  authored seed (`fomo`/`price` for score; `contractRisk`/
+  `suspiciousWallets` for risk) because no adapter or on-chain analysis
+  exists for those yet. The "realtime" stream (TASK 04) is a
+  client-side `setInterval` simulation; the price/volume charts
+  (TASK 05) read a deterministically generated mock series — neither is
+  a real data source, and there is still no persistence layer
+  (TASK 09/10). Auction data, holders, and top-10 concentration remain
+  static mock fixtures throughout (holder-analysis is TASK 14).
 
 ## Next task
 
-TASK 07 — RISK ENGINE (not started; do not proceed automatically).
+TASK 08 — SIGNAL ENGINE (not started; do not proceed automatically).

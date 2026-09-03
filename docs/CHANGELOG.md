@@ -1,5 +1,111 @@
 # CHANGELOG
 
+## 0.8.0 — TASK 07 (Risk Engine)
+
+### Added
+- `lib/risk/riskEngine.js` — `computeRisk(token)`, the project's first
+  real Risk Engine, per `docs/ARCHITECTURE.md` §7. **Independent of the
+  Score Engine**: never reads `token.score`/`scoreBreakdown`, and
+  `lib/scoring/scoreEngine.js` never reads `token.risk` — a token can
+  score high and still be flagged high risk, per architecture.
+  - `liquidityStatus` (HEALTHY/THIN/CRITICAL) computed from `liquidity`
+    (USD) + `liquidityTrend`.
+  - `concentration` (LOW/MODERATE/HIGH) computed from
+    `top10Concentration`.
+  - `exitStatus` (CLEAR/SLIPPAGE RISK/ILLIQUID) derived directly from
+    `liquidityStatus` (V1: liquidity depth is the primary exit-
+    feasibility driver at this phase; kept out of the aggregate below
+    to avoid double-counting the same liquidity signal).
+  - `contractRisk` and `suspiciousWallets` have no real feature source
+    (bytecode/honeypot analysis and wallet-clustering detection don't
+    exist yet — no adapter) — passed through from an authored seed
+    unchanged, same principle as `fomo`/`price` in the Score Engine.
+  - New aggregate `overall` (LOW/MODERATE/HIGH) and `noTrade` boolean
+    (`overall === "HIGH"`) — the concrete implementation of
+    ARCHITECTURE.md §7's "Score 90 + Risk HIGH = NO TRADE" rule.
+
+### Changed
+- `mocks/tokens.js`: each fixture's `risk` now seeds only
+  `{ contractRisk, suspiciousWallets }`; the exported `mockTokens` maps
+  every fixture through `computeRisk` (alongside TASK 06's
+  `computeScore`) to produce the real `risk` object.
+- `lib/realtime/mockStream.js` (TASK 04): `tickToken` now also calls
+  `computeRisk` after mutating a token's live fields (liquidity/trend
+  feed `liquidityStatus`/`exitStatus`), so risk badges on the live
+  dashboard track the mock stream instead of staying frozen.
+  `concentration`/`contractRisk`/`suspiciousWallets` still don't change
+  live — `top10Concentration` isn't ticked (TASK 14 territory) and the
+  other two have no feature source regardless.
+- `components/dashboard/SelectedTokenPanel.js`: the RISK section header
+  now shows the new aggregate `overall` tier, and a "· NO TRADE" marker
+  when `noTrade` is true — the one small UI change in this task, giving
+  the architecture's core risk principle a visible home instead of
+  only existing in data.
+
+### Verification
+- `npm run lint` / `npm run build` — PASS.
+- Verified with a standalone script mirroring the engine before wiring
+  it in, then re-verified the wired `mockTokens` output matches
+  exactly, for all 10 tokens.
+- `npm run dev` — verified manually: `/token/mrbl`'s rendered HTML
+  shows "HIGH · NO TRADE" in the RISK section (MRBL: liquidity $8.1K,
+  68% top-10 concentration, contract HIGH, 3 suspicious wallets — every
+  input already bad); `/dashboard`, `/token/nxa`, `/token/ptra`
+  unaffected in terms of HTTP status; no server errors.
+
+### Decisions
+- No dependencies added.
+- Computed `liquidityStatus`/`concentration` land extremely close to
+  the old hand-authored labels for 9 of 10 tokens (only NXA shifts
+  HEALTHY → THIN, since $42.1K liquidity falls just under the $50K
+  threshold) — a much smaller drift than TASK 06's score numbers, since
+  the original risk labels already tracked liquidity/concentration
+  fairly literally.
+- `contractRisk`/`suspiciousWallets` remain pass-through, same as
+  `fomo`/`price` in the Score Engine — no on-chain bytecode analysis or
+  wallet-clustering data exists (that's real infrastructure, not a
+  formula this engine could reasonably invent).
+- Coincidentally, the two tokens now flagged `noTrade: true` (MRBL,
+  PTRA) are also the two lowest-scoring tokens from TASK 06 — this is
+  NOT because the engines talk to each other (they don't, by design);
+  it's an artifact of the original mock narrative authoring every
+  attribute of those two tokens as uniformly weak. A future mock token
+  with a high score AND high risk remains fully possible and would
+  display correctly (score panel and risk panel are independent reads).
+
+## 0.7.1 — Hotfix (hydration mismatch on "Last update")
+
+### Fixed
+- `lib/realtime/useMockLiveStream.js` (TASK 04 bug, found while
+  preparing TASK 07): `lastUpdate`'s initial state was computed as
+  `useState(() => formatClockTime(new Date()))`. That initializer runs
+  once during SSR and again during client hydration — at two different
+  wall-clock moments, often different seconds — producing a React
+  hydration mismatch on `DashboardHeader`'s "Last update" text
+  (`+15:30:14` / `-15:30:13`-style errors in the browser console,
+  forcing a client-side re-render of the whole tree).
+- Fix: `lastUpdate` now starts `undefined`, so `DashboardHeader`'s
+  existing default prop (the static `mockLastUpdate` fixture,
+  `"12:42:31"`) renders identically on the server and on the client's
+  first pass — no clock involved, so no mismatch is possible. The real
+  current time is set inside `useEffect` instead, which by definition
+  never runs during SSR, so it only touches the DOM after hydration has
+  already completed.
+- One line needed `// eslint-disable-next-line
+  react-hooks/set-state-in-effect`, since this is a deliberate,
+  React-docs-endorsed pattern for deferring a browser-only value past
+  hydration — not the accidental "state that should’ve been computed
+  during render" case that rule normally catches.
+
+### Verification
+- `npm run lint` / `npm run build` — PASS.
+- `npm run dev` — verified manually: three separate `curl` requests to
+  `/dashboard`, several real seconds apart, now all return the exact
+  same server-rendered "Last update: 12:42:31" text (previously each
+  request returned a different, real-clock-derived time — the direct
+  cause of the mismatch). The real clock only takes over client-side,
+  after mount, so it can no longer disagree with the server's HTML.
+
 ## 0.7.0 — TASK 06 (Score Engine)
 
 ### Added

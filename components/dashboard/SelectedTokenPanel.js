@@ -26,11 +26,22 @@ const RISK_TONES = {
   ILLIQUID: "negative",
 };
 
+/** Overall risk tier → text color, for the RISK section's summary label. */
+const OVERALL_TEXT_TONES = {
+  LOW: "text-positive",
+  MODERATE: "text-warning",
+  HIGH: "text-negative",
+};
+
 /**
  * Core identity + quantitative snapshot for the currently selected
- * token, plus a compact risk section. Risk is presented as-is from mock
- * data — no Risk Engine logic exists (see docs/ARCHITECTURE.md §7: a
- * token can score high and still carry high risk).
+ * token, plus a compact risk section. `token.risk`'s `liquidityStatus`,
+ * `concentration`, `exitStatus`, and the `overall`/`noTrade` summary
+ * are computed by the Risk Engine (TASK 07 — see
+ * lib/risk/riskEngine.js), independently of score (see
+ * docs/ARCHITECTURE.md §7: a token can score high and still carry high
+ * risk). `contractRisk`/`suspiciousWallets` still have no real feature
+ * source and pass through an authored seed.
  */
 export default function SelectedTokenPanel({ token }) {
   return (
@@ -82,8 +93,18 @@ export default function SelectedTokenPanel({ token }) {
       <Divider />
 
       <div className="px-4 py-3">
-        <div className="mb-2 text-[10px] font-semibold tracking-widest text-text-muted">
-          RISK
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-[10px] font-semibold tracking-widest text-text-muted">
+            RISK
+          </span>
+          <span className="flex items-center gap-1.5 text-[10px] font-semibold tracking-wide">
+            <span className={OVERALL_TEXT_TONES[token.risk.overall] ?? "text-text-secondary"}>
+              {token.risk.overall}
+            </span>
+            {token.risk.noTrade && (
+              <span className="text-negative">· NO TRADE</span>
+            )}
+          </span>
         </div>
         <div className="flex flex-wrap gap-1.5">
           <RiskBadge label="Liquidity" value={token.risk.liquidityStatus} />

@@ -17,9 +17,18 @@
 // final `score`/`scoreBreakdown` shown across the UI. Score tier
 // constants/helpers are re-exported from that module — it is now their
 // canonical home, not this one.
+//
+// `risk` is likewise no longer fully hand-authored (TASK 07): each
+// token below seeds only `{ contractRisk, suspiciousWallets }` (the two
+// risk attributes with no real feature source yet), and `mockTokens`
+// maps every raw fixture through `lib/risk/riskEngine.js:computeRisk`
+// to fill in `liquidityStatus`, `concentration`, `exitStatus`, and the
+// aggregate `overall`/`noTrade` fields — independently of score, per
+// docs/ARCHITECTURE.md §7.
 // -----------------------------------------------------------------------
 
 import { computeScore, SCORE_TIERS, getScoreTier, SCORE_COMPONENT_MAX, SCORE_COMPONENT_LABELS } from "@/lib/scoring/scoreEngine";
+import { computeRisk } from "@/lib/risk/riskEngine";
 
 export { SCORE_TIERS, getScoreTier, SCORE_COMPONENT_MAX, SCORE_COMPONENT_LABELS };
 
@@ -69,7 +78,12 @@ export const mockMarketStatus = {
  *   trailing baseline), uniqueBuyers, liquidityTrend
  * - holders: holders, top10Concentration
  * - auction: mock Long auction snapshot (see AUCTION_STATUSES)
- * - risk: independent of score — see docs/ARCHITECTURE.md §7
+ * - risk: seed for the two attributes with no real feature source yet
+ *   (`contractRisk`, `suspiciousWallets` — see lib/risk/riskEngine.js).
+ *   `liquidityStatus`/`concentration`/`exitStatus`/`overall`/`noTrade`
+ *   are COMPUTED (not authored here) by the `.map(computeRisk)` below,
+ *   TASK 07 onward. Independent of score — see
+ *   docs/ARCHITECTURE.md §7.
  * - scoreBreakdown: seed for the two components with no real feature
  *   source yet (`fomo`, `price` — see lib/scoring/scoreEngine.js). The
  *   other six components, and the final `score`, are COMPUTED (not
@@ -97,13 +111,7 @@ const rawMockTokens = [
     holders: 412,
     top10Concentration: 24,
     auction: { status: "LIVE", actual: 61, expected: 42, efficiency: 1.45, price: 0.00034 },
-    risk: {
-      liquidityStatus: "HEALTHY",
-      concentration: "LOW",
-      contractRisk: "LOW",
-      exitStatus: "CLEAR",
-      suspiciousWallets: 0,
-    },
+    risk: { contractRisk: "LOW", suspiciousWallets: 0 },
     scoreBreakdown: { fomo: 14, price: 5 },
     signal: "SETUP A",
   },
@@ -126,13 +134,7 @@ const rawMockTokens = [
     holders: 968,
     top10Concentration: 31,
     auction: { status: "LIVE", actual: 54, expected: 48, efficiency: 1.13, price: 0.00151 },
-    risk: {
-      liquidityStatus: "HEALTHY",
-      concentration: "MODERATE",
-      contractRisk: "LOW",
-      exitStatus: "CLEAR",
-      suspiciousWallets: 0,
-    },
+    risk: { contractRisk: "LOW", suspiciousWallets: 0 },
     scoreBreakdown: { fomo: 13, price: 4 },
     signal: "SETUP A",
   },
@@ -155,13 +157,7 @@ const rawMockTokens = [
     holders: 205,
     top10Concentration: 42,
     auction: { status: "LIVE", actual: 38, expected: 40, efficiency: 0.95, price: 0.0000821 },
-    risk: {
-      liquidityStatus: "THIN",
-      concentration: "MODERATE",
-      contractRisk: "MODERATE",
-      exitStatus: "SLIPPAGE RISK",
-      suspiciousWallets: 1,
-    },
+    risk: { contractRisk: "MODERATE", suspiciousWallets: 1 },
     scoreBreakdown: { fomo: 11, price: 4 },
     signal: "SETUP B",
   },
@@ -184,13 +180,7 @@ const rawMockTokens = [
     holders: 1_340,
     top10Concentration: 19,
     auction: { status: "LIVE", actual: 58, expected: 39, efficiency: 1.49, price: 0.00201 },
-    risk: {
-      liquidityStatus: "HEALTHY",
-      concentration: "LOW",
-      contractRisk: "LOW",
-      exitStatus: "CLEAR",
-      suspiciousWallets: 0,
-    },
+    risk: { contractRisk: "LOW", suspiciousWallets: 0 },
     scoreBreakdown: { fomo: 13, price: 4 },
     signal: "SETUP A",
   },
@@ -213,13 +203,7 @@ const rawMockTokens = [
     holders: 88,
     top10Concentration: 68,
     auction: { status: "NONE", actual: null, expected: null, efficiency: null, price: null },
-    risk: {
-      liquidityStatus: "CRITICAL",
-      concentration: "HIGH",
-      contractRisk: "HIGH",
-      exitStatus: "ILLIQUID",
-      suspiciousWallets: 3,
-    },
+    risk: { contractRisk: "HIGH", suspiciousWallets: 3 },
     scoreBreakdown: { fomo: 7, price: 2 },
     signal: "IGNORE",
   },
@@ -242,13 +226,7 @@ const rawMockTokens = [
     holders: 356,
     top10Concentration: 37,
     auction: { status: "ENDED", actual: 100, expected: 85, efficiency: 1.18, price: 0.000701 },
-    risk: {
-      liquidityStatus: "THIN",
-      concentration: "MODERATE",
-      contractRisk: "MODERATE",
-      exitStatus: "SLIPPAGE RISK",
-      suspiciousWallets: 0,
-    },
+    risk: { contractRisk: "MODERATE", suspiciousWallets: 0 },
     scoreBreakdown: { fomo: 10, price: 3 },
     signal: "WATCH+",
   },
@@ -271,13 +249,7 @@ const rawMockTokens = [
     holders: 2_870,
     top10Concentration: 15,
     auction: { status: "LIVE", actual: 77, expected: 45, efficiency: 1.71, price: 0.0119 },
-    risk: {
-      liquidityStatus: "HEALTHY",
-      concentration: "LOW",
-      contractRisk: "LOW",
-      exitStatus: "CLEAR",
-      suspiciousWallets: 0,
-    },
+    risk: { contractRisk: "LOW", suspiciousWallets: 0 },
     scoreBreakdown: { fomo: 14, price: 5 },
     signal: "EXTREME",
   },
@@ -300,13 +272,7 @@ const rawMockTokens = [
     holders: 142,
     top10Concentration: 55,
     auction: { status: "NONE", actual: null, expected: null, efficiency: null, price: null },
-    risk: {
-      liquidityStatus: "CRITICAL",
-      concentration: "HIGH",
-      contractRisk: "MODERATE",
-      exitStatus: "ILLIQUID",
-      suspiciousWallets: 2,
-    },
+    risk: { contractRisk: "MODERATE", suspiciousWallets: 2 },
     scoreBreakdown: { fomo: 8, price: 3 },
     signal: "WATCH",
   },
@@ -329,13 +295,7 @@ const rawMockTokens = [
     holders: 604,
     top10Concentration: 29,
     auction: { status: "LIVE", actual: 49, expected: 44, efficiency: 1.11, price: 0.000842 },
-    risk: {
-      liquidityStatus: "HEALTHY",
-      concentration: "MODERATE",
-      contractRisk: "LOW",
-      exitStatus: "CLEAR",
-      suspiciousWallets: 0,
-    },
+    risk: { contractRisk: "LOW", suspiciousWallets: 0 },
     scoreBreakdown: { fomo: 12, price: 4 },
     signal: "SETUP B",
   },
@@ -358,13 +318,7 @@ const rawMockTokens = [
     holders: 811,
     top10Concentration: 26,
     auction: { status: "ENDED", actual: 100, expected: 92, efficiency: 1.09, price: 0.00187 },
-    risk: {
-      liquidityStatus: "HEALTHY",
-      concentration: "LOW",
-      contractRisk: "LOW",
-      exitStatus: "CLEAR",
-      suspiciousWallets: 0,
-    },
+    risk: { contractRisk: "LOW", suspiciousWallets: 0 },
     scoreBreakdown: { fomo: 12, price: 4 },
     signal: "SETUP A",
   },
@@ -372,15 +326,16 @@ const rawMockTokens = [
 
 /**
  * The exported token list every component reads. Each raw fixture above
- * is passed through `computeScore` (TASK 06 — see
- * lib/scoring/scoreEngine.js) to produce its final `score` and full
- * 8-component `scoreBreakdown` — the six computed components come from
- * the fixture's own feature fields; `fomo`/`price` pass through the
- * seed values above unchanged (no adapter/model exists for them yet).
+ * is passed through `computeScore` (TASK 06) and `computeRisk`
+ * (TASK 07 — see lib/scoring/scoreEngine.js / lib/risk/riskEngine.js)
+ * to produce its final `score`/`scoreBreakdown` and full `risk` object.
+ * The two engines never read each other's output — score and risk stay
+ * independent per docs/ARCHITECTURE.md §7.
  */
 export const mockTokens = rawMockTokens.map((token) => {
   const { score, breakdown } = computeScore(token);
-  return { ...token, score, scoreBreakdown: breakdown };
+  const risk = computeRisk(token);
+  return { ...token, score, scoreBreakdown: breakdown, risk };
 });
 
 /**
