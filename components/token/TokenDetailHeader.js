@@ -5,9 +5,13 @@ import SignalBadge from "@/components/dashboard/SignalBadge";
 import { formatPrice, formatAge } from "@/components/ui/format";
 
 /**
- * Full-page header for the token detail route (TASK 03). Purely
- * presentational: identity, chain/age, price, score, and signal for the
- * token passed in. No data fetching, no live updates (see TASK 04).
+ * Full-page header for the token detail route (TASK 03). Identity,
+ * chain/age, price, score, and signal for the token passed in.
+ * `token.signalReason` (TASK 08 — see lib/signal/signalEngine.js) is
+ * shown as a small caption under the badges, giving the signal state a
+ * visible explanation instead of just a label. Still no data fetching
+ * of its own on this page; TASK 04's live stream only reaches
+ * `/dashboard`, not this route.
  */
 export default function TokenDetailHeader({ token }) {
   return (
@@ -33,15 +37,22 @@ export default function TokenDetailHeader({ token }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="text-right">
-            <div className="tabular text-base font-semibold text-text-primary">
-              {formatPrice(token.price)}
+        <div className="flex flex-col items-end gap-1.5">
+          <div className="flex items-center gap-4">
+            <div className="text-right">
+              <div className="tabular text-base font-semibold text-text-primary">
+                {formatPrice(token.price)}
+              </div>
+              <div className="text-[11px] text-text-muted">Price</div>
             </div>
-            <div className="text-[11px] text-text-muted">Price</div>
+            <ScoreBadge score={token.score} />
+            <SignalBadge signal={token.signal} />
           </div>
-          <ScoreBadge score={token.score} />
-          <SignalBadge signal={token.signal} />
+          {token.signalReason && (
+            <p className="max-w-xs text-right text-[11px] text-text-muted">
+              {token.signalReason}
+            </p>
+          )}
         </div>
       </div>
     </div>

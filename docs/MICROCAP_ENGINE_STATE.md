@@ -1,15 +1,35 @@
 # MICROCAP ENGINE — DEVELOPMENT STATE
 
-**Version:** 0.8.0
+**Version:** 0.9.0
 
 **Current phase:** PHASE 1 — UI / MOCK ENGINE
 
-**Current task:** TASK 07 — RISK ENGINE
+**Current task:** TASK 08 — SIGNAL ENGINE
 
 **Project status:** COMPLETED
 
 ## Completed
 
+- TASK 08 — SIGNAL ENGINE: new `lib/signal/signalEngine.js` —
+  `computeSignal(token)`, the project's first real Signal Engine, per
+  the conceptual `Signal` shape in `docs/ARCHITECTURE.md` §5.
+  Reconciles the already-computed Score Engine (TASK 06) and Risk
+  Engine (TASK 07) output: if `risk.overall` is HIGH, signal is forced
+  to IGNORE regardless of score (concrete enforcement of "Score 90 +
+  Risk HIGH = NO TRADE"); otherwise signal follows the score tier
+  directly, escalating a SETUP A+ tier to EXTREME only when both
+  volume and buyer acceleration are ≥ 3x. Also produces a
+  `signalReason` explanation string. First engine needing zero
+  authored seed — every input already has a real feature source.
+  `mocks/tokens.js` fixtures no longer author a `signal` field at all
+  (previously the last hand-authored token attribute); `mockTokens`
+  computes it via `computeSignal` after score/risk. TASK 04's
+  `tickToken` also recomputes signal live now, alongside score/risk.
+  Small UI addition: `TokenDetailHeader.js` shows `signalReason` as a
+  caption under the badges. No dependencies added. Verified:
+  standalone script matched wired output exactly for all 10 tokens;
+  `npm run lint`/`build` pass; dev-server HTML confirmed HLX renders
+  "EXTREME" with its full momentum-based reason text.
 - TASK 07 — RISK ENGINE: new `lib/risk/riskEngine.js` —
   `computeRisk(token)`, the project's first real Risk Engine, per
   `docs/ARCHITECTURE.md` §7. Fully independent of the Score Engine (no
@@ -212,7 +232,7 @@
 
 ## In progress
 
-- Nothing beyond TASK 07 scope is in progress.
+- Nothing beyond TASK 08 scope is in progress.
 
 ## Known issues
 
@@ -285,21 +305,24 @@ filled in when those integrations are actually built.
 - This is a greenfield scaffold, not an audited legacy system — future
   sessions should not assume any business logic, data model, or API
   integration exists beyond what is listed under "Completed" above.
-- TASK 01–07 are UI/engine-only in the sense that no real data source
+- TASK 01–08 are UI/engine-only in the sense that no real data source
   exists. There is still no database, blockchain/RPC integration,
   Long/Fomo integration, real WebSocket/SSE connection, wallet
-  connection, or trading execution of any kind. TASK 06's Score Engine
-  and TASK 07's Risk Engine are real, deterministic, independent logic
-  — not mock data — but each still passes 2 of its inputs through an
-  authored seed (`fomo`/`price` for score; `contractRisk`/
-  `suspiciousWallets` for risk) because no adapter or on-chain analysis
-  exists for those yet. The "realtime" stream (TASK 04) is a
-  client-side `setInterval` simulation; the price/volume charts
-  (TASK 05) read a deterministically generated mock series — neither is
-  a real data source, and there is still no persistence layer
-  (TASK 09/10). Auction data, holders, and top-10 concentration remain
-  static mock fixtures throughout (holder-analysis is TASK 14).
+  connection, or trading execution of any kind. TASK 06's Score Engine,
+  TASK 07's Risk Engine, and TASK 08's Signal Engine are real,
+  deterministic logic — not mock data — but Score/Risk each still pass
+  2 of their inputs through an authored seed (`fomo`/`price` for score;
+  `contractRisk`/`suspiciousWallets` for risk) because no adapter or
+  on-chain analysis exists for those yet; Signal needs no seed at all.
+  The "realtime" stream (TASK 04) is a client-side `setInterval`
+  simulation; the price/volume charts (TASK 05) read a deterministically
+  generated mock series — neither is a real data source, and there is
+  still no persistence layer (TASK 09/10). Auction data, holders, and
+  top-10 concentration remain static mock fixtures throughout
+  (holder-analysis is TASK 14).
 
 ## Next task
 
-TASK 08 — SIGNAL ENGINE (not started; do not proceed automatically).
+TASK 09 — DATABASE (not started; do not proceed automatically). Note:
+per ROADMAP.md, this is the first task requiring a DECISION on
+PostgreSQL schema and driver/ORM choice before implementation.

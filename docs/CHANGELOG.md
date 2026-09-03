@@ -1,5 +1,71 @@
 # CHANGELOG
 
+## 0.9.0 — TASK 08 (Signal Engine)
+
+### Added
+- `lib/signal/signalEngine.js` — `computeSignal(token)`, the project's
+  first real Signal Engine, per the conceptual `Signal` shape in
+  `docs/ARCHITECTURE.md` §5 (`score, setup, ..., reason`). Reconciles
+  the already-computed Score Engine (TASK 06) and Risk Engine (TASK 07)
+  output into a final `signal` state (one of `SIGNAL_STATES`) plus a
+  short `reason` string:
+  1. **Risk gate**: if `risk.overall` is HIGH (`noTrade`), signal is
+     forced to `IGNORE` regardless of score — the concrete enforcement,
+     at the signal layer, of ARCHITECTURE.md §7's "Score 90 + Risk HIGH
+     = NO TRADE".
+  2. Otherwise, signal follows the score tier directly
+     (IGNORE/WATCH/WATCH+/SETUP B/SETUP A), with one escalation: a
+     SETUP A+ score tier only becomes `EXTREME` when BOTH volume and
+     buyer acceleration are independently ≥ 3x — high score alone isn't
+     "extreme", violent momentum on top of it is.
+  - Unlike Score and Risk, this engine needs **zero** authored seed —
+    every input it reads (score, risk, momentum) already has a real
+    feature source. It's the first fully-computed engine in the
+    project.
+
+### Changed
+- `mocks/tokens.js`: fixtures no longer author a `signal` field at all
+  (previously the last hand-authored attribute on each token);
+  `mockTokens` now computes `signal`/`signalReason` via `computeSignal`
+  after `computeScore`/`computeRisk`, resolving the drift between the
+  authored `signal` and the computed score tier that TASK 06/07 both
+  explicitly deferred to this task.
+- `lib/realtime/mockStream.js` (TASK 04): `tickToken` now also calls
+  `computeSignal` after recomputing score/risk, so the live dashboard's
+  signal badge never silently disagrees with the score/risk badges
+  sitting next to it.
+- `components/token/TokenDetailHeader.js`: now shows `signalReason` as
+  a small caption under the score/signal badges — the one UI change in
+  this task, giving the signal's reasoning a visible home instead of
+  only existing in data.
+
+### Verification
+- `npm run lint` / `npm run build` — PASS.
+- Verified with a standalone script mirroring the engine before wiring
+  it in, then re-verified the wired `mockTokens` output matches
+  exactly, for all 10 tokens.
+- `npm run dev` — verified manually: `/token/hlx` renders "EXTREME"
+  with the reason "Score 95 (SETUP A+) with exceptional volume (4.1x)
+  and buyer (3.4x) acceleration."; `/dashboard`, `/token/ptra`
+  unaffected in terms of HTTP status; no server errors.
+
+### Decisions
+- No dependencies added.
+- PTRA is a good demonstration of the risk gate: its score tier alone
+  (16, IGNORE) would already map to IGNORE anyway, but MRBL/PTRA both
+  now show the `reason` explicitly crediting the risk override, not
+  just the score, making the "NO TRADE" rule visible in the data even
+  when it wouldn't have changed the outcome.
+- Recomputed signals differ from the old hand-authored ones for 6 of 10
+  tokens (only NXA, DRFT, MRBL, HLX land on the same label as before) —
+  expected, same as TASK 06/07: the old `signal` values were narrative
+  placeholders that were never actually derived from score or risk, so
+  reconciling them was the whole point of this task.
+- `EXTREME`'s momentum bar (≥ 3x on both volume and buyer acceleration)
+  is a V1 threshold, not calibrated against real data — consistent with
+  Score/Risk Engine's own "V1, not final" framing. Only HLX currently
+  clears it.
+
 ## 0.8.0 — TASK 07 (Risk Engine)
 
 ### Added

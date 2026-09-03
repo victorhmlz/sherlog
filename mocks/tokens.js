@@ -25,10 +25,18 @@
 // to fill in `liquidityStatus`, `concentration`, `exitStatus`, and the
 // aggregate `overall`/`noTrade` fields — independently of score, per
 // docs/ARCHITECTURE.md §7.
+//
+// `signal` is no longer authored at all (TASK 08): every raw fixture
+// below omits it entirely, and `mockTokens` computes it via
+// `lib/signal/signalEngine.js:computeSignal`, which reconciles the
+// already-computed `score` and `risk` (plus momentum) into a final
+// signal state and a `signalReason` explanation string. Unlike score
+// and risk, this needs no authored seed of its own.
 // -----------------------------------------------------------------------
 
 import { computeScore, SCORE_TIERS, getScoreTier, SCORE_COMPONENT_MAX, SCORE_COMPONENT_LABELS } from "@/lib/scoring/scoreEngine";
 import { computeRisk } from "@/lib/risk/riskEngine";
+import { computeSignal } from "@/lib/signal/signalEngine";
 
 export { SCORE_TIERS, getScoreTier, SCORE_COMPONENT_MAX, SCORE_COMPONENT_LABELS };
 
@@ -88,8 +96,9 @@ export const mockMarketStatus = {
  *   source yet (`fomo`, `price` — see lib/scoring/scoreEngine.js). The
  *   other six components, and the final `score`, are COMPUTED (not
  *   authored here) by the `.map(computeScore)` below TASK 06 onward.
- * - signal: one of SIGNAL_STATES (distinct from the score tier label —
- *   Signal Engine, TASK 08, does not exist yet either)
+ * - signal / signalReason: fully COMPUTED (not authored at all, no
+ *   seed needed) by `.map(computeSignal)` below, TASK 08 onward — see
+ *   lib/signal/signalEngine.js. One of SIGNAL_STATES.
  */
 const rawMockTokens = [
   {
@@ -113,7 +122,6 @@ const rawMockTokens = [
     auction: { status: "LIVE", actual: 61, expected: 42, efficiency: 1.45, price: 0.00034 },
     risk: { contractRisk: "LOW", suspiciousWallets: 0 },
     scoreBreakdown: { fomo: 14, price: 5 },
-    signal: "SETUP A",
   },
   {
     id: "vlt",
@@ -136,7 +144,6 @@ const rawMockTokens = [
     auction: { status: "LIVE", actual: 54, expected: 48, efficiency: 1.13, price: 0.00151 },
     risk: { contractRisk: "LOW", suspiciousWallets: 0 },
     scoreBreakdown: { fomo: 13, price: 4 },
-    signal: "SETUP A",
   },
   {
     id: "qrn",
@@ -159,7 +166,6 @@ const rawMockTokens = [
     auction: { status: "LIVE", actual: 38, expected: 40, efficiency: 0.95, price: 0.0000821 },
     risk: { contractRisk: "MODERATE", suspiciousWallets: 1 },
     scoreBreakdown: { fomo: 11, price: 4 },
-    signal: "SETUP B",
   },
   {
     id: "drft",
@@ -182,7 +188,6 @@ const rawMockTokens = [
     auction: { status: "LIVE", actual: 58, expected: 39, efficiency: 1.49, price: 0.00201 },
     risk: { contractRisk: "LOW", suspiciousWallets: 0 },
     scoreBreakdown: { fomo: 13, price: 4 },
-    signal: "SETUP A",
   },
   {
     id: "mrbl",
@@ -205,7 +210,6 @@ const rawMockTokens = [
     auction: { status: "NONE", actual: null, expected: null, efficiency: null, price: null },
     risk: { contractRisk: "HIGH", suspiciousWallets: 3 },
     scoreBreakdown: { fomo: 7, price: 2 },
-    signal: "IGNORE",
   },
   {
     id: "cndr",
@@ -228,7 +232,6 @@ const rawMockTokens = [
     auction: { status: "ENDED", actual: 100, expected: 85, efficiency: 1.18, price: 0.000701 },
     risk: { contractRisk: "MODERATE", suspiciousWallets: 0 },
     scoreBreakdown: { fomo: 10, price: 3 },
-    signal: "WATCH+",
   },
   {
     id: "hlx",
@@ -251,7 +254,6 @@ const rawMockTokens = [
     auction: { status: "LIVE", actual: 77, expected: 45, efficiency: 1.71, price: 0.0119 },
     risk: { contractRisk: "LOW", suspiciousWallets: 0 },
     scoreBreakdown: { fomo: 14, price: 5 },
-    signal: "EXTREME",
   },
   {
     id: "ptra",
@@ -274,7 +276,6 @@ const rawMockTokens = [
     auction: { status: "NONE", actual: null, expected: null, efficiency: null, price: null },
     risk: { contractRisk: "MODERATE", suspiciousWallets: 2 },
     scoreBreakdown: { fomo: 8, price: 3 },
-    signal: "WATCH",
   },
   {
     id: "svrn",
@@ -297,7 +298,6 @@ const rawMockTokens = [
     auction: { status: "LIVE", actual: 49, expected: 44, efficiency: 1.11, price: 0.000842 },
     risk: { contractRisk: "LOW", suspiciousWallets: 0 },
     scoreBreakdown: { fomo: 12, price: 4 },
-    signal: "SETUP B",
   },
   {
     id: "zphr",
@@ -320,22 +320,24 @@ const rawMockTokens = [
     auction: { status: "ENDED", actual: 100, expected: 92, efficiency: 1.09, price: 0.00187 },
     risk: { contractRisk: "LOW", suspiciousWallets: 0 },
     scoreBreakdown: { fomo: 12, price: 4 },
-    signal: "SETUP A",
   },
 ];
 
 /**
  * The exported token list every component reads. Each raw fixture above
- * is passed through `computeScore` (TASK 06) and `computeRisk`
- * (TASK 07 — see lib/scoring/scoreEngine.js / lib/risk/riskEngine.js)
- * to produce its final `score`/`scoreBreakdown` and full `risk` object.
- * The two engines never read each other's output — score and risk stay
- * independent per docs/ARCHITECTURE.md §7.
+ * is passed through `computeScore` (TASK 06), `computeRisk` (TASK 07),
+ * and `computeSignal` (TASK 08 — see lib/scoring/scoreEngine.js,
+ * lib/risk/riskEngine.js, lib/signal/signalEngine.js) to produce its
+ * final `score`/`scoreBreakdown`, `risk`, and `signal`/`signalReason`.
+ * Score and Risk never read each other's output; Signal reads both
+ * (that reconciliation is its entire purpose).
  */
 export const mockTokens = rawMockTokens.map((token) => {
   const { score, breakdown } = computeScore(token);
   const risk = computeRisk(token);
-  return { ...token, score, scoreBreakdown: breakdown, risk };
+  const withScoreAndRisk = { ...token, score, scoreBreakdown: breakdown, risk };
+  const { signal, reason } = computeSignal(withScoreAndRisk);
+  return { ...withScoreAndRisk, signal, signalReason: reason };
 });
 
 /**
