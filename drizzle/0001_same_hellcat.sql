@@ -1,0 +1,1 @@
+ALTER TABLE "signals" ADD COLUMN "is_buyable" boolean DEFAULT false NOT NULL;

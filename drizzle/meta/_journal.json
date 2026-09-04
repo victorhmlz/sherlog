@@ -8,6 +8,13 @@
       "when": 1788506060297,
       "tag": "0000_rich_jackpot",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788512780285,
+      "tag": "0001_same_hellcat",
+      "breakpoints": true
     }
   ]
 }

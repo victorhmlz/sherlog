@@ -49,8 +49,9 @@ TASK 22 — HARDENING
   roadmap includes real trade execution, wallet key handling, or
   automated buying/selling. Any future request to add real execution
   is a distinct, separate decision outside this roadmap's scope.
-- TASK 09 (DATABASE) is the first point at which a concrete PostgreSQL
-  schema and driver/ORM choice must be made (DECISION REQUIRED,
-  currently unresolved).
+- TASK 09 (DATABASE) was the first point at which a concrete
+  PostgreSQL schema and driver/ORM choice had to be made — RESOLVED:
+  Drizzle ORM + Neon (free tier), see docs/CHANGELOG.md's 0.10.0 entry
+  for the decision rationale.
 - TASK 12 and TASK 16 must not scrape data; only documented/authorized
   APIs and RPC endpoints are permitted.

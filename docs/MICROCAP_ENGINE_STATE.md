@@ -1,15 +1,48 @@
 # MICROCAP ENGINE — DEVELOPMENT STATE
 
-**Version:** 0.10.0
+**Version:** 0.11.0
 
 **Current phase:** PHASE 2 — DATA
 
-**Current task:** TASK 09 — DATABASE
+**Current task:** TASK 10 — HISTORICAL SNAPSHOTS
 
 **Project status:** COMPLETED
 
 ## Completed
 
+- TASK 10 — HISTORICAL SNAPSHOTS: new `lib/data/capture.js` —
+  `captureSnapshot()` runs one capture pass over `mocks/tokens.js`
+  (reusing TASK 04's `tickToken`, no new jitter logic), writing
+  `tokens`/`market_snapshots`/`signals`/`auction_data` rows through the
+  TASK 09 schema. `splitScoreBreakdown()` maps the Score Engine's
+  8-component breakdown onto the `signals` table's 5 sub-score columns
+  (momentum=volume+buyers+pressure, external=fomo+price), verified to
+  always sum to `token.score`. `signals` also gained an `isBuyable`
+  boolean (`.default(false)`, migration-safety only — app code always
+  sets it explicitly): `true` only for `SETUP A`/`EXTREME`
+  (`isBuyableSetup()`, verified against all 6 `SIGNAL_STATES`) — this
+  was the explicit point of the task: `WHERE is_buyable = true` gives a
+  durable daily record of which tokens looked buyable and which
+  didn't, without re-deriving the threshold in every query. New
+  `lib/data/mockChainMap.js` — maps
+  mock `chain` strings to integer `chainId`s (real EVM IDs for
+  ETH/BASE/ARB/BSC, a `0` sentinel for non-EVM SOL); mock tokens use a
+  synthetic `"mock:<id>"` address (deliberately not real-address-
+  shaped). New `app/api/cron/capture-snapshots/route.js` — the
+  trigger, checks `CRON_SECRET` if set (skipped if unset, dev-
+  friendly). New `vercel.json` registers it on Vercel Cron
+  (`0 0 * * *`) — **Hobby plan caps this at once/day**; higher
+  frequency needs an external scheduler hitting the same route (your
+  choice, not implemented) or Vercel Pro. No dependencies added.
+  `npm run lint`/`build` pass; sub-score sum-preservation and
+  `isBuyableSetup` verified in isolation; the route manually verified
+  to return the correct friendly `500` without `DATABASE_URL`, correct
+  `401`/pass-through with `CRON_SECRET`, and zero impact on the rest of
+  the app. **NOT verified end-to-end against a real database** (same
+  sandbox network restriction as TASK 09) — you'll need to run
+  `db:push` again (new `is_buyable` column) then hit
+  `/api/cron/capture-snapshots` yourself with `DATABASE_URL` set and
+  confirm the JSON summary looks right.
 - TASK 09 — DATABASE (PHASE 1 → PHASE 2): decisions made together
   (this task was explicitly flagged DECISION REQUIRED, not decided
   unilaterally): **Drizzle ORM** + **Neon** (free tier, Postgres only)
@@ -259,11 +292,12 @@
 
 ## In progress
 
-- You still need to run `npm run db:push` against your real Neon
-  `DATABASE_URL` to actually create the TASK 09 tables — the schema
-  and migration exist in the repo, but were never applied to a live
-  database from this build environment (see TASK 09's Verification
-  notes above). Nothing else beyond TASK 09 scope is in progress.
+- `npm run db:push` was confirmed successful against a real Neon
+  database (the TASK 09 tables exist for real now). You still need to
+  hit `/api/cron/capture-snapshots` yourself (locally, with
+  `DATABASE_URL` set) and confirm the capture actually writes rows —
+  see TASK 10's Verification notes above. Nothing else beyond TASK 10
+  scope is in progress.
 
 ## Known issues
 
@@ -352,17 +386,19 @@ filled in when those integrations are actually built.
   stream (TASK 04) is a client-side `setInterval` simulation; the
   price/volume charts (TASK 05) read a deterministically generated mock
   series. TASK 09's database schema (`lib/data/db/`) is real
-  infrastructure, but nothing reads or writes through it yet — the
-  dashboard/token-detail pages still read `mocks/tokens.js` exclusively
-  and remain completely unaffected. There is still no blockchain/RPC
-  integration, Long/Fomo integration, real WebSocket/SSE connection,
-  wallet connection, or trading execution of any kind. Auction data,
-  holders, and top-10 concentration remain static mock fixtures
-  throughout (holder-analysis is TASK 14).
+  infrastructure — and, as of TASK 10, actively written to (via
+  `/api/cron/capture-snapshots`) — but nothing on the dashboard/
+  token-detail pages *reads* through it yet; they still read
+  `mocks/tokens.js` exclusively and remain completely unaffected. There
+  is still no blockchain/RPC integration, Long/Fomo integration, real
+  WebSocket/SSE connection, wallet connection, or trading execution of
+  any kind. Auction data, holders, and top-10 concentration remain
+  static mock fixtures throughout (holder-analysis is TASK 14).
 
 ## Next task
 
-TASK 10 — HISTORICAL SNAPSHOTS (not started; do not proceed
-automatically). This is the task that starts actually writing to the
-TASK 09 schema — requires `DATABASE_URL` to be set to a real,
-`db:push`-ed Neon database first.
+TASK 11 — ANALYTICS (not started; do not proceed automatically). This
+closes PHASE 2 — likely reads back the `market_snapshots`/`signals`
+history TASK 10 writes and surfaces it somewhere in the UI; needs
+TASK 10's capture route to have actually run a few times first so
+there's something to analyze.

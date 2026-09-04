@@ -1,0 +1,606 @@
+{
+  "id": "c56aa5f1-1262-4e5e-abb8-443c44c95c71",
+  "prevId": "997504fa-fb4a-44ff-bcb2-d9a68f8c643c",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.auction_data": {
+      "name": "auction_data",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "token_id": {
+          "name": "token_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "timestamp": {
+          "name": "timestamp",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "auction_progress": {
+          "name": "auction_progress",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expected_progress": {
+          "name": "expected_progress",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "auction_efficiency": {
+          "name": "auction_efficiency",
+          "type": "numeric(6, 3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "price": {
+          "name": "price",
+          "type": "numeric(38, 18)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tokens_sold": {
+          "name": "tokens_sold",
+          "type": "numeric(38, 2)",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "auction_data_token_id_timestamp_idx": {
+          "name": "auction_data_token_id_timestamp_idx",
+          "columns": [
+            {
+              "expression": "token_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "timestamp",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "auction_data_token_id_tokens_id_fk": {
+          "name": "auction_data_token_id_tokens_id_fk",
+          "tableFrom": "auction_data",
+          "tableTo": "tokens",
+          "columnsFrom": [
+            "token_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.market_snapshots": {
+      "name": "market_snapshots",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "token_id": {
+          "name": "token_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "timestamp": {
+          "name": "timestamp",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "price": {
+          "name": "price",
+          "type": "numeric(38, 18)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "market_cap": {
+          "name": "market_cap",
+          "type": "numeric(38, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "liquidity": {
+          "name": "liquidity",
+          "type": "numeric(38, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "volume_5m": {
+          "name": "volume_5m",
+          "type": "numeric(38, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "volume_15m": {
+          "name": "volume_15m",
+          "type": "numeric(38, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "volume_30m": {
+          "name": "volume_30m",
+          "type": "numeric(38, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "buys_5m": {
+          "name": "buys_5m",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sells_5m": {
+          "name": "sells_5m",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "unique_buyers_5m": {
+          "name": "unique_buyers_5m",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "unique_sellers_5m": {
+          "name": "unique_sellers_5m",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "buy_pressure": {
+          "name": "buy_pressure",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "holders": {
+          "name": "holders",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "top1_pct": {
+          "name": "top1_pct",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "top5_pct": {
+          "name": "top5_pct",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "top10_pct": {
+          "name": "top10_pct",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "market_snapshots_token_id_timestamp_idx": {
+          "name": "market_snapshots_token_id_timestamp_idx",
+          "columns": [
+            {
+              "expression": "token_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "timestamp",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "market_snapshots_token_id_tokens_id_fk": {
+          "name": "market_snapshots_token_id_tokens_id_fk",
+          "tableFrom": "market_snapshots",
+          "tableTo": "tokens",
+          "columnsFrom": [
+            "token_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.paper_trades": {
+      "name": "paper_trades",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "token_id": {
+          "name": "token_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "entry_time": {
+          "name": "entry_time",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "entry_price": {
+          "name": "entry_price",
+          "type": "numeric(38, 18)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "exit_time": {
+          "name": "exit_time",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "exit_price": {
+          "name": "exit_price",
+          "type": "numeric(38, 18)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "position_size": {
+          "name": "position_size",
+          "type": "numeric(38, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pnl": {
+          "name": "pnl",
+          "type": "numeric(38, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pnl_percent": {
+          "name": "pnl_percent",
+          "type": "numeric(10, 4)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "max_drawdown": {
+          "name": "max_drawdown",
+          "type": "numeric(10, 4)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "max_runup": {
+          "name": "max_runup",
+          "type": "numeric(10, 4)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "entry_score": {
+          "name": "entry_score",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "exit_reason": {
+          "name": "exit_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "paper_trades_token_id_entry_time_idx": {
+          "name": "paper_trades_token_id_entry_time_idx",
+          "columns": [
+            {
+              "expression": "token_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "entry_time",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "paper_trades_token_id_tokens_id_fk": {
+          "name": "paper_trades_token_id_tokens_id_fk",
+          "tableFrom": "paper_trades",
+          "tableTo": "tokens",
+          "columnsFrom": [
+            "token_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.signals": {
+      "name": "signals",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "token_id": {
+          "name": "token_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "timestamp": {
+          "name": "timestamp",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "score": {
+          "name": "score",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "setup": {
+          "name": "setup",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_buyable": {
+          "name": "is_buyable",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "momentum_score": {
+          "name": "momentum_score",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "liquidity_score": {
+          "name": "liquidity_score",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "holder_score": {
+          "name": "holder_score",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "auction_score": {
+          "name": "auction_score",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "external_signal_score": {
+          "name": "external_signal_score",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "signals_token_id_timestamp_idx": {
+          "name": "signals_token_id_timestamp_idx",
+          "columns": [
+            {
+              "expression": "token_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "timestamp",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "signals_token_id_tokens_id_fk": {
+          "name": "signals_token_id_tokens_id_fk",
+          "tableFrom": "signals",
+          "tableTo": "tokens",
+          "columnsFrom": [
+            "token_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.tokens": {
+      "name": "tokens",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "address": {
+          "name": "address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "chain_id": {
+          "name": "chain_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "symbol": {
+          "name": "symbol",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "tokens_address_chain_id_idx": {
+          "name": "tokens_address_chain_id_idx",
+          "columns": [
+            {
+              "expression": "address",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "chain_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

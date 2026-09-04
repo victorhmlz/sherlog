@@ -1,5 +1,105 @@
 # CHANGELOG
 
+## 0.11.0 — TASK 10 (Historical Snapshots)
+
+**Follow-up confirmed:** `npm run db:push` (TASK 09) was run
+successfully against a real Neon database — the 5 tables from TASK 09
+now exist for real, not just as a migration file.
+
+### Added
+- `lib/data/capture.js` — `captureSnapshot()`, one "capture pass":
+  advances every `mocks/tokens.js` token by one simulated tick
+  (reusing TASK 04's `tickToken` — no new jitter logic invented), then
+  upserts its `tokens` identity row and inserts one `market_snapshots`
+  row, one `signals` row, and (only if the token has a live/ended
+  auction) one `auction_data` row — all through the TASK 09 schema.
+  `splitScoreBreakdown()` divides the Score Engine's 8-component
+  breakdown into the `signals` table's 5 named sub-score columns
+  (`momentumScore` = volume+buyers+pressure, `liquidityScore`,
+  `holderScore`, `auctionScore`, `externalSignalScore` = fomo+price) —
+  these 5 always sum to exactly `token.score`, verified for several
+  breakdown shapes including an all-zero one (MRBL). Also computes
+  `isBuyable` (see the `signals` table entry below) via
+  `isBuyableSetup()`, verified against all 6 `SIGNAL_STATES`.
+- `lib/data/mockChainMap.js` — maps each mock token's display `chain`
+  string ("SOL"/"ETH"/...) to the integer `chainId` the TASK 09 schema
+  expects. EVM chains map to their real public chain IDs (ETH=1,
+  BASE=8453, ARB=42161, BSC=56); SOL (non-EVM, no integer chain ID)
+  maps to a `0` sentinel rather than a fabricated number. Explicitly a
+  temporary shim, superseded once TASK 12 (EVM Adapter) does real
+  on-chain ingestion. Mock tokens also have no real contract address,
+  so captured rows use a synthetic `"mock:<id>"` string — deliberately
+  not formatted like a real address, so it can never be mistaken for
+  one.
+- `app/api/cron/capture-snapshots/route.js` — the Next.js Route
+  Handler that runs one capture pass on request. Checks
+  `Authorization: Bearer ${CRON_SECRET}` if `CRON_SECRET` is set
+  (skipped if unset — same dev-friendly posture as `getDb()`'s
+  `DATABASE_URL` check). Returns a small JSON summary (counts, not
+  full rows) or a `500` with the underlying error message.
+- `vercel.json` — registers the route on Vercel Cron:
+  `0 0 * * *` (daily, midnight UTC) — **Vercel Hobby caps cron
+  frequency at once per day**; anything sub-daily is rejected at
+  deploy time. If you want more frequent snapshots without upgrading
+  to Pro ($20/mo), the route itself is a normal HTTP endpoint — any
+  external scheduler (a free cron-ping service, a script on your own
+  machine, etc.) can call it at any frequency; that's a separate
+  decision, not implemented here.
+- `.env.example`: documented the optional `CRON_SECRET` variable.
+- `lib/data/db/schema.js`: `signals` gained an `isBuyable` boolean
+  column (`is_buyable`, `.default(false)` so the migration is safe on
+  a table that may already have rows — application code always
+  supplies an explicit value on insert, the default is a migration
+  safety net only, never a real "unknown" state in practice). Set from
+  `isBuyableSetup(setup)` — `true` only for `SETUP A`/`EXTREME`,
+  deliberately narrower than "not IGNORE" (excludes `SETUP B`,
+  `WATCH`/`WATCH+`), matching the Signal Engine's own strict-not-loose
+  posture for its highest tier. This is *your* explicit ask for this
+  task: a durable, directly-queryable record of which tokens looked
+  buyable on a given day and which didn't — `WHERE is_buyable = true`
+  instead of remembering/replicating the `setup` threshold in every
+  query. New migration: `drizzle/0001_same_hellcat.sql`.
+
+### Verification
+- `npm run lint` / `npm run build` — PASS; new route compiles as a
+  dynamic (`ƒ`) endpoint, everything else unchanged.
+- `splitScoreBreakdown`'s sum-preservation verified against several
+  sample breakdowns (including an all-zero one) in isolation.
+  `isBuyableSetup` verified against all 6 `SIGNAL_STATES` values in
+  isolation.
+- `/api/cron/capture-snapshots` manually verified against the running
+  dev server: without `DATABASE_URL` set, returns `500` with the
+  expected friendly error (not a crash) and `/dashboard` remains
+  completely unaffected; with `CRON_SECRET` set, an unauthenticated
+  request correctly gets `401`, and a correctly-authenticated request
+  passes the auth check and proceeds to the (expected, in that test)
+  `DATABASE_URL` error.
+- **Not verified end-to-end**: an actual capture pass against a real
+  database (insert into all 4 tables) was not run from this sandbox —
+  same network restriction as TASK 09. You ran `db:push` yourself
+  successfully, so **please run `npm run db:push` again first** (to
+  apply the new `is_buyable` column via `drizzle/0001_same_hellcat.sql`
+  — a plain `ALTER TABLE ... ADD COLUMN`, safe on your existing empty
+  tables), **then hit this route yourself**
+  (`http://localhost:3000/api/cron/capture-snapshots` locally with
+  `DATABASE_URL` set) and paste me the JSON response — that closes the
+  loop on whether the actual inserts work end-to-end.
+
+### Decisions
+- No dependencies added.
+- Each capture starts fresh from the static mock baseline, not from
+  the previous capture's stored values — `tickToken`'s own jitter
+  still gives each row real variation, but this is NOT a continuously-
+  compounding series across captures. Resuming from the last DB row
+  would need either an always-on process or a richer persisted shape
+  (the schema doesn't store `volumeAcceleration`/`buyerAcceleration`,
+  which `tickToken` needs) — out of scope for V1, documented in code
+  rather than silently glossed over.
+- `market_snapshots.volume15m`/`buys5m`/`sells5m`/`uniqueSellers5m`/
+  `top1Pct`/`top5Pct` and `auction_data.tokensSold` are left `null` on
+  every insert — no corresponding mock field exists for any of them;
+  left empty rather than invented.
+
 ## 0.10.0 — TASK 09 (Database)
 
 **DECISIONS (made together, not unilaterally, per ROADMAP.md's
