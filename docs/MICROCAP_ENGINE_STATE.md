@@ -1,14 +1,46 @@
 # SHERLOG — DEVELOPMENT STATE
 
-**Version:** 0.12.1
+**Version:** 0.13.0
 
-**Current phase:** PHASE 2 — DATA (closed)
+**Current phase:** PHASE 3 — ON-CHAIN
 
-**Current task:** Rebrand (Sherlog) + Phase 1 final verification
+**Current task:** TASK 12 — EVM ADAPTER
 
 **Project status:** COMPLETED
 
 ## Completed
+
+- TASK 12 — EVM ADAPTER (opens PHASE 3): decisions made together
+  (per ROADMAP.md's authorized-APIs-only constraint on this task):
+  **viem** (read-only, no wallet/signer — matches this project never
+  executing real trades) + **viem's built-in public RPC defaults**, no
+  provider signup (this app's actual call volume — at most one capture
+  a day, TASK 10's Hobby cron limit — doesn't need one yet; same
+  reasoning as TASK 09's Neon choice). New `lib/chain/clients.js` —
+  `getEvmClient(chainKey)`, lazy/cached read-only clients for the 4 EVM
+  chains already used by mock data (`ETH`/`BASE`/`ARB`/`BSC` — SOL
+  excluded, not EVM); confirmed viem's chain IDs (1/8453/42161/56)
+  match `lib/data/mockChainMap.js` exactly. New
+  `lib/chain/erc20.js:fetchTokenIdentity(chainKey, address)` — reads a
+  real ERC-20's name/symbol/decimals/totalSupply, filling the `Token`
+  conceptual shape (ARCHITECTURE.md §5) with real on-chain data for the
+  first time. New `lib/chain/health.js:getLatestBlockNumber` +
+  `app/api/debug/evm-status` (manual verification endpoint, not a cron
+  job). Deliberately does NOT compute price/liquidity/volume/holders —
+  those need swap/transfer indexing over time (TASK 13–15), not a
+  single contract read. No route or component reads through this yet —
+  pure infrastructure, same precedent as TASK 09; the dashboard/mocks
+  are completely unaffected. `npm run lint`/`build` pass; all 4 clients
+  verified offline to construct with correct chain IDs/RPC URLs;
+  `getEvmClient("SOL")` throws the intended error; client caching
+  verified. `/api/debug/evm-status` manually verified to return `200`
+  with per-chain error detail even when every RPC call fails — **this
+  sandbox's network egress blocks all RPC hosts** (confirmed via
+  viem's own `403 Host not in allowlist` errors naming the correct
+  host per chain), so the actual real-block-number response was NOT
+  seen from here. **Please hit `/api/debug/evm-status` yourself** (no
+  signup needed) and confirm real block numbers come back for all 4
+  chains.
 
 - **Rebrand (Sherlog) + Phase 1 final verification** (not a numbered
   roadmap task — cross-cutting aesthetic pass requested directly): new
@@ -345,10 +377,10 @@
 
 ## In progress
 
-- Please open `/analytics` yourself (with `DATABASE_URL` set) and
-  confirm it renders your real captured signals sensibly — see
-  TASK 11's Verification notes above. Nothing else beyond TASK 11
-  scope is in progress.
+- Please hit `/api/debug/evm-status` yourself (no signup, no env vars
+  needed) and confirm it returns real block numbers for all 4 EVM
+  chains — see TASK 12's Verification notes above. Nothing else beyond
+  TASK 12 scope is in progress.
 
 ## Known issues
 
@@ -391,6 +423,7 @@ dependencies:
   recharts: ^3.10
   drizzle-orm: ^0.45
   @neondatabase/serverless: ^1.1
+  viem: ^2.56
 
 devDependencies:
   @tailwindcss/postcss: ^4
@@ -406,7 +439,10 @@ volume charts. `drizzle-orm`/`@neondatabase/serverless` (runtime) and
 `drizzle-kit`/`dotenv` (dev, CLI-only) were added in TASK 09 for the
 database schema/client — see that task's CHANGELOG entry for the
 Drizzle-vs-Prisma-vs-Kysely and Neon-vs-Supabase-vs-Docker decisions.
-No WebSocket library has been installed yet — will be added only when
+`viem` was added in TASK 12 for read-only EVM RPC access — see that
+task's CHANGELOG entry for the viem-vs-ethers.js and public-RPC-vs-
+provider decisions. No WebSocket library has been installed yet — will
+be added only when
 a concrete task needs it.
 
 ## Environment
@@ -438,20 +474,22 @@ filled in when those integrations are actually built.
   price/volume charts (TASK 05) read a deterministically generated mock
   series. TASK 09's database schema (`lib/data/db/`) is real
   infrastructure, actively written to (TASK 10, confirmed against real
-  data), and now — as of TASK 11 — actively read back for the
-  `/analytics` page. The dashboard/token-detail pages still read
-  `mocks/tokens.js` exclusively and remain completely unaffected. There
-  is still no blockchain/RPC integration, Long/Fomo integration, real
-  WebSocket/SSE connection, wallet connection, or trading execution of
-  any kind. Auction data, holders, and top-10 concentration remain
-  static mock fixtures throughout (holder-analysis is TASK 14).
-  PHASE 2 — DATA is now closed.
+  data), and actively read back for `/analytics` (TASK 11). The
+  dashboard/token-detail pages still read `mocks/tokens.js` exclusively
+  and remain completely unaffected. TASK 12 added real, read-only EVM
+  RPC access (`lib/chain/`) — the first real (non-mock) data source in
+  the project — but nothing reads through it yet either; it can fetch
+  a real token's on-chain identity (name/symbol/decimals/totalSupply)
+  but not price, liquidity, volume, or holders (that needs swap/
+  transfer indexing over time — TASK 13–15). There is still no Long/
+  Fomo integration, real WebSocket/SSE connection, wallet connection,
+  or trading execution of any kind. Auction data, holders, and top-10
+  concentration remain static mock fixtures throughout.
 
 ## Next task
 
-TASK 12 — EVM ADAPTER (not started; do not proceed automatically).
-This opens PHASE 3 — ON-CHAIN and is the point where real, non-mock
-data first enters the app. Per `docs/ROADMAP.md`'s own note: "TASK 12
-... must not scrape data; only documented/authorized APIs and RPC
-endpoints are permitted." Likely needs a DECISION on which RPC
-provider/endpoint to use, similar to TASK 09's database decision.
+TASK 13 — SWAP INDEXING (not started; do not proceed automatically).
+Builds on TASK 12's EVM clients to index swap transactions over time —
+the first source of real volume/buy-pressure/momentum data, and a
+prerequisite for TASK 15 (liquidity/price discovery, which needs to
+identify the right pool from swap activity).

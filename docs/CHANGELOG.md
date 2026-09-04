@@ -1,5 +1,90 @@
 # CHANGELOG
 
+## 0.13.0 — TASK 12 (EVM Adapter) — opens PHASE 3
+
+**DECISIONS (made together, per ROADMAP.md's "TASK 12 ... must not
+scrape data; only documented/authorized APIs and RPC endpoints"
+constraint, and consistent with TASK 09's precedent of deciding
+infrastructure choices together, not unilaterally):**
+- **Library: viem**, over ethers.js. Read-only usage only (no wallet,
+  no signer, no transaction signing exists anywhere in this project —
+  see ROADMAP.md: no phase includes real trade execution). viem is
+  lighter (~27kb vs ~130kb), tree-shakeable, and the current standard
+  recommendation for new read-only/multi-chain work in 2026.
+- **RPC endpoints: viem's own built-in public defaults**, not a signed-up
+  provider. This app's actual call volume (at most one capture pass a
+  day — TASK 10's Vercel Hobby cron limit) is genuinely served by a
+  shared public endpoint; a dedicated provider (Chainstack's free tier
+  covers all four target chains, if ever needed) would be solving a
+  problem this app doesn't have yet — same reasoning as TASK 09's Neon
+  free-tier choice. `RPC_URL_<CHAIN>` env vars can override the
+  default per chain independently, with zero code changes, if that
+  changes later.
+
+### Added
+- `lib/chain/clients.js` — `getEvmClient(chainKey)`, a lazy (never
+  touches env vars or the network at import time — same posture as
+  `getDb()`, TASK 09), cached, read-only viem `PublicClient` per
+  supported chain. `SUPPORTED_EVM_CHAINS = ["ETH", "BASE", "ARB",
+  "BSC"]` — the same chain keys `mocks/tokens.js`/
+  `lib/data/mockChainMap.js` already use (SOL excluded — not EVM).
+  Confirmed viem's chain IDs for all four (1, 8453, 42161, 56) match
+  `mockChainMap.js`'s `MOCK_CHAIN_TO_CHAIN_ID` exactly — no
+  reconciliation needed when mock data is eventually replaced by real
+  on-chain reads.
+- `lib/chain/erc20.js` — `fetchTokenIdentity(chainKey, address)`: reads
+  a real ERC-20 contract's `name`/`symbol`/`decimals`/`totalSupply` via
+  the 4 standard view functions (concurrent reads, minimal inline ABI).
+  Fills exactly the `Token` conceptual shape from
+  `docs/ARCHITECTURE.md` §5 (`address, chainId, symbol, name`) — the
+  first time any of that model's fields come from a real chain instead
+  of a mock fixture. Deliberately does NOT compute price, liquidity,
+  volume, or holder concentration — those need indexing swaps/transfers
+  over time, not a single point-in-time contract read (TASK 13 — SWAP
+  INDEXING, TASK 14 — HOLDER ANALYSIS, TASK 15 — LIQUIDITY ANALYSIS).
+- `lib/chain/health.js` — `getLatestBlockNumber(chainKey)`: the
+  simplest possible proof an RPC connection works, without needing a
+  known contract address.
+- `app/api/debug/evm-status/route.js` — manual verification endpoint;
+  calls `getLatestBlockNumber` for all 4 chains independently (one
+  chain failing doesn't hide whether the others work) and returns a
+  JSON summary. Not a cron job, not called by anything else.
+- `.env.example`: documented the 4 optional `RPC_URL_*` overrides.
+
+### Verification
+- `npm run lint` / `npm run build` — PASS; `/api/debug/evm-status`
+  compiles as a dynamic route; existing routes/pages completely
+  unaffected (nothing else imports `lib/chain/*` yet).
+- Verified offline (no network needed): all 4 viem `PublicClient`s
+  construct correctly with the right `chainId` (1/8453/42161/56) and
+  correct default public RPC URL per chain; `getEvmClient("SOL")`
+  throws the intended clear error (SOL isn't EVM); the client cache
+  returns the same instance on a second call for the same chain key.
+- `/api/debug/evm-status` manually verified against the running dev
+  server: returns `200` (never crashes) even when every underlying RPC
+  call fails, with each chain's specific error reported independently.
+  **This sandbox's network egress is restricted to package registries
+  — no RPC host is reachable from it** (confirmed: all 4 calls failed
+  with viem's own `403 Host not in allowlist` error, naming the exact
+  host each chain correctly tried to reach). This is the sandbox's
+  limitation, not the code's — **please hit
+  `http://localhost:3000/api/debug/evm-status` yourself** (no signup
+  needed, no env vars required) and confirm it returns real block
+  numbers for all 4 chains.
+
+### Decisions
+- No route or component reads through this adapter yet — pure
+  infrastructure, same precedent as TASK 09. Nothing in `mocks/
+  tokens.js` or the dashboard changes; wiring real on-chain reads into
+  anything user-facing needs TASK 13–15 first (price/volume/holders),
+  since a token's identity alone isn't enough to compute a Score/Risk/
+  Signal.
+- `totalSupply` is returned as a string, not a `BigInt` — `BigInt`
+  doesn't survive `JSON.stringify` (would throw), and every other
+  large-number field in this codebase (Drizzle's `numeric` columns,
+  TASK 09) is already string-shaped for the same reason.
+- No dependencies beyond `viem` itself.
+
 ## 0.12.1 — Rebrand (Sherlog) + Phase 1 final verification
 
 Not a numbered roadmap task — a cross-cutting aesthetic/branding pass

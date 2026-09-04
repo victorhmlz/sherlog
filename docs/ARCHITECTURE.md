@@ -34,7 +34,7 @@ its component signals (e.g. "Score 83/100 because: Volume acceleration
 | Backend    | Node.js 22.x, Next.js route handlers (`app/api/`) | Server functions/workers to be added as needed |
 | Database   | PostgreSQL (Neon), Drizzle ORM      | Schema + client added in TASK 09 (`lib/data/db/`) — no route reads/writes through it yet, see TASK 10 |
 | Realtime   | WebSockets / SSE                     | **NOT YET IMPLEMENTED** |
-| Blockchain | EVM-compatible, RPC / WS-RPC         | **NOT YET IMPLEMENTED** |
+| Blockchain | EVM-compatible, RPC / WS-RPC        | Read-only RPC client added in TASK 12 (`lib/chain/`) — identity reads only (name/symbol/decimals/totalSupply); price/liquidity/volume/holders need TASK 13–15 |
 | Data sources | Long, on-chain data, authorized external APIs | **NOT YET IMPLEMENTED** — adapters are interfaces only, TODO |
 
 > NOTE: This project was scaffolded from scratch in TASK 00 (no pre-existing
@@ -198,8 +198,12 @@ TASK 00.
 
 ## 9. Blockchain / Long / External Integrations (future)
 
-- EVM adapter: RPC + WS-RPC, on-chain swap/holder indexing. Not
-  implemented — TASK 12–15.
+- EVM adapter: RPC + WS-RPC, on-chain swap/holder indexing.
+  Read-only RPC client + ERC-20 identity reads implemented in TASK 12
+  (`lib/chain/`) — viem, public RPC endpoints (no provider signup;
+  `RPC_URL_<CHAIN>` env vars can override per chain). Swap indexing,
+  holder analysis, and liquidity/price discovery are NOT implemented —
+  TASK 13–15.
 - Long adapter: auction data (progress, expected progress, efficiency).
   Not implemented — TASK 16–17. No scraping; only documented/authorized
   APIs.
