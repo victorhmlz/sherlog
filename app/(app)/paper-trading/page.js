@@ -1,6 +1,6 @@
 import RoutePlaceholder from "@/components/ui/RoutePlaceholder";
 
-export const metadata = { title: "Paper Trading — Microcap Engine" };
+export const metadata = { title: "Paper Trading — Sherlog" };
 
 export default function PaperTradingPage() {
   return (

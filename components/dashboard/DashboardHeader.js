@@ -21,7 +21,7 @@ export default function DashboardHeader({
       <div>
         <div className="flex items-center gap-2">
           <h1 className="text-lg font-semibold tracking-tight text-text-primary">
-            Microcap Engine
+            Sherlog
           </h1>
           <Badge tone="neutral">MOCK DATA</Badge>
         </div>

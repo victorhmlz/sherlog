@@ -1,19 +1,41 @@
 @import "tailwindcss";
 
 /* -----------------------------------------------------------------------
- * MICROCAP ENGINE — design tokens
+ * SHERLOG — design tokens
  * Centralized surface/text/border/semantic scale. Components should
  * reference these via Tailwind utility classes (bg-surface, text-muted,
  * border-line, etc.) rather than hardcoding hex values.
+ *
+ * Brand palette (rebrand, see docs/CHANGELOG.md): bg/surface/
+ * surface-elevated/accent/positive are drawn from Sherlog's green
+ * palette (#0A0A0B, #111D11, #0D411F, #177C39, #3AD35C).
+ * `surface-elevated` uses a derived, less-saturated tone (#142218)
+ * rather than the palette's #0D411F directly — that color is
+ * noticeably brighter than the others, and `surface-elevated` backs
+ * hovers/badges/meter-tracks everywhere in the app; using it at full
+ * saturation dropped muted-text contrast well below the original
+ * theme's (already borderline) level. `line`/`line-strong` are
+ * likewise derived (dark, desaturated greens) — hairline borders were
+ * never meant to be a flagged brand color, just a subtle separator.
+ * `negative` (red) and `warning` (amber) are deliberately KEPT
+ * UNCHANGED from the original theme, not pulled into the green
+ * palette — this app uses red/amber specifically to flag risk
+ * (`RISK: HIGH`, `NO TRADE`, `FALLING` liquidity, etc.), and an
+ * all-green UI would erase that signal exactly where it matters most.
+ * `positive` was moved onto the same brand green as `accent` (was a
+ * separate teal, `#3fb68b`) — "good" and "brand" converging on one
+ * green reads as intentional here, not redundant. Text colors are
+ * unchanged for legibility; the palette has no light tones suited to
+ * body text.
  * --------------------------------------------------------------------- */
 
 :root {
   /* Surfaces */
-  --color-bg: #08090d;
-  --color-surface: #0d1017;
-  --color-surface-elevated: #121620;
-  --color-line: #1e2430;
-  --color-line-strong: #2a3140;
+  --color-bg: #0a0a0b;
+  --color-surface: #111d11;
+  --color-surface-elevated: #142218;
+  --color-line: #1c2e1f;
+  --color-line-strong: #24402a;
 
   /* Text */
   --color-text-primary: #f4f6f8;
@@ -21,14 +43,14 @@
   --color-text-muted: #606978;
 
   /* Semantic */
-  --color-positive: #3fb68b;
-  --color-positive-dim: #1c3a30;
+  --color-positive: #3ad35c;
+  --color-positive-dim: #13351f;
   --color-negative: #e2555f;
   --color-negative-dim: #3a1e22;
   --color-warning: #d9a441;
   --color-warning-dim: #3a301a;
-  --color-accent: #4c8eff;
-  --color-accent-dim: #16233f;
+  --color-accent: #3ad35c;
+  --color-accent-dim: #163d24;
 
   /* Radius */
   --radius-sm: 3px;

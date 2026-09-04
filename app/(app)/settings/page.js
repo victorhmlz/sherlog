@@ -1,6 +1,6 @@
 import RoutePlaceholder from "@/components/ui/RoutePlaceholder";
 
-export const metadata = { title: "Settings — Microcap Engine" };
+export const metadata = { title: "Settings — Sherlog" };
 
 export default function SettingsPage() {
   return (

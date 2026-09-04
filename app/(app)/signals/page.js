@@ -1,6 +1,6 @@
 import RoutePlaceholder from "@/components/ui/RoutePlaceholder";
 
-export const metadata = { title: "Signals — Microcap Engine" };
+export const metadata = { title: "Signals — Sherlog" };
 
 export default function SignalsPage() {
   return (

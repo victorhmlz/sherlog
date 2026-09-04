@@ -1,6 +1,6 @@
 import RoutePlaceholder from "@/components/ui/RoutePlaceholder";
 
-export const metadata = { title: "Scanner — Microcap Engine" };
+export const metadata = { title: "Scanner — Sherlog" };
 
 export default function ScannerPage() {
   return (

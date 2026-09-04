@@ -1,6 +1,6 @@
 import RoutePlaceholder from "@/components/ui/RoutePlaceholder";
 
-export const metadata = { title: "Watchlist — Microcap Engine" };
+export const metadata = { title: "Watchlist — Sherlog" };
 
 export default function WatchlistPage() {
   return (

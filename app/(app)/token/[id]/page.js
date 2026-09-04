@@ -18,8 +18,8 @@ export async function generateMetadata({ params }) {
   const token = mockTokens.find((entry) => entry.id === id);
   return {
     title: token
-      ? `${token.symbol} — Microcap Engine`
-      : "Token not found — Microcap Engine",
+      ? `${token.symbol} — Sherlog`
+      : "Token not found — Sherlog",
   };
 }
 

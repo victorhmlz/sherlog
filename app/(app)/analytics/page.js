@@ -5,7 +5,7 @@ import AnalyticsUnavailable from "@/components/analytics/AnalyticsUnavailable";
 import { getAnalyticsSummary } from "@/lib/data/analytics";
 import { formatCount } from "@/components/ui/format";
 
-export const metadata = { title: "Analytics — Microcap Engine" };
+export const metadata = { title: "Analytics — Sherlog" };
 
 // This page queries the database on every request (TASK 11) — force
 // dynamic rendering so `next build` never tries to run that query at

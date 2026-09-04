@@ -1,5 +1,101 @@
 # CHANGELOG
 
+## 0.12.1 — Rebrand (Sherlog) + Phase 1 final verification
+
+Not a numbered roadmap task — a cross-cutting aesthetic/branding pass
+requested directly, plus a regression check of everything built in
+Phase 1 now that Phase 2 has touched shared UI code.
+
+### Added
+- `public/logo.png` — the Sherlog wordmark (geometric green wireframe
+  on a transparent background — confirmed via its alpha channel before
+  using it, so it renders cleanly on this app's dark UI instead of
+  showing a stray white box).
+
+### Changed
+- **Color palette** (`app/globals.css`): `bg`/`surface`/`accent`/
+  `positive` now come from Sherlog's green brand palette (`#0A0A0B`,
+  `#111D11`, `#3AD35C`). Two deliberate departures from applying the
+  palette literally, both computed via WCAG contrast ratios (see
+  below), not eyeballed:
+  - `surface-elevated` uses a derived `#142218`, not the palette's
+    `#0D411F` directly. That color is markedly brighter/more saturated
+    than the others, and `surface-elevated` backs hovers, badges, and
+    meter tracks throughout the entire app — at full saturation, muted
+    text on top of it dropped to a 2.11:1 contrast ratio (well below
+    even the original theme's already-borderline 3.26:1 for that same
+    pairing). `#142218` restores it to 2.98:1, matching the original's
+    step size (~1.05:1 contrast between `surface` and
+    `surface-elevated`) recolored into green rather than copying the
+    brighter swatch verbatim.
+  - `negative` (red, `#e2555f`) and `warning` (amber, `#d9a441`) are
+    UNCHANGED — deliberately kept out of the green palette. This app
+    uses red/amber specifically to flag risk (`RISK: HIGH`,
+    `NO TRADE`, `FALLING` liquidity — TASK 07) and an all-green UI
+    would erase that signal exactly where it matters most. `positive`
+    was moved onto the same green as `accent` (previously a separate
+    teal, `#3fb68b`) — "good" and "brand" converging on one green is
+    intentional here, not a redundancy.
+  - `line`/`line-strong` are derived dark desaturated greens — hairline
+    borders were never a flagged brand color in the original design
+    either, just a subtle separator; WCAG text-contrast thresholds
+    don't apply to them.
+  - Text colors (`text-primary`/`secondary`/`muted`) are unchanged —
+    the given palette has no light tones suited to body text, and
+    legibility wins over strict palette adherence there.
+- **Branding**: `components/layout/Topbar.js`'s "MICROCAP ENGINE" text
+  replaced with the logo image (113×22, matching the source asset's
+  5.11:1 aspect ratio). `components/dashboard/DashboardHeader.js`'s
+  "Microcap Engine" heading renamed to "Sherlog" (text only — the logo
+  image lives once, in the Topbar, which is present on every page；
+  putting it in both places would be redundant).
+- All 9 `metadata.title` occurrences across `app/` renamed from
+  "... — Microcap Engine" to "... — Sherlog" (`layout.js`, dashboard,
+  token detail ×2, analytics, paper-trading, watchlist, settings,
+  signals, scanner). `layout.js`'s description ("Real-Time Microcap
+  Intelligence Terminal") was left as-is — it describes the app's
+  category, not the old brand name.
+- `package.json`'s `name` field: `microcap-engine` → `sherlog`.
+- `docs/ARCHITECTURE.md`, `docs/ROADMAP.md`,
+  `docs/MICROCAP_ENGINE_STATE.md`: H1 titles renamed to "SHERLOG — ...".
+  **Scope note**: hundreds of in-code comment headers
+  (`// MICROCAP ENGINE — ...`) and historical CHANGELOG entries were
+  deliberately NOT rewritten — that's a much larger, purely cosmetic
+  diff across nearly every file in the codebase for no functional
+  benefit, and rewriting historical CHANGELOG entries specifically
+  would falsify the record of what was true at the time. If you want
+  that deeper sweep too, say so explicitly and it can be a follow-up.
+
+### Phase 1 final verification
+Re-ran the full Phase 1 surface (TASK 01–08) after the palette/branding
+change, since it touches shared components (`Card`, `Badge`,
+`Sidebar`, `Topbar`, `DashboardHeader`, every color token) used by
+every page:
+- `npm run lint` / `npm run build` — PASS, identical route table.
+- Every Phase 1 route (`/dashboard`, `/token/nxa`, `/token/hlx`,
+  `/token/mrbl`, `/token/doesnotexist`, `/scanner`, `/signals`,
+  `/watchlist`, `/settings`, `/paper-trading`) returns `200`; Phase 2
+  routes (`/analytics`, `/api/cron/capture-snapshots`) unaffected
+  (`capture-snapshots` still correctly `500`s without `DATABASE_URL`,
+  same as always in this sandbox).
+- Confirmed in rendered HTML: the logo renders (`/logo.png` present),
+  zero leftover "Microcap Engine" text anywhere, page titles read
+  "... — Sherlog".
+- Confirmed in compiled CSS: `--color-accent: #3ad35c`,
+  `--color-positive: #3ad35c`, `--color-surface-elevated: #142218`,
+  `--color-negative: #e2555f` and `--color-warning: #d9a441`
+  (unchanged) all present as designed.
+- HLX still renders "EXTREME" with both TASK 05 charts present; MRBL
+  still renders "NO TRADE"; the hydration-mismatch hotfix still holds
+  (two `/dashboard` requests, seconds apart, both show the identical
+  static `12:42:31` "Last update" text — SSR/hydration agreement
+  unaffected by the palette change). No console/server errors in any
+  of the above.
+- **Not verified**: actual visual appearance (this sandbox has no
+  browser/screenshot capability) — all of the above confirms structural
+  correctness and WCAG contrast math, not "does it look good". Please
+  eyeball it yourself once deployed/running locally.
+
 ## 0.12.0 — TASK 11 (Analytics) — closes PHASE 2
 
 **Confirmed:** TASK 10's capture route was verified end-to-end against

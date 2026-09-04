@@ -1,7 +1,7 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "Microcap Engine",
+  title: "Sherlog",
   description: "Real-Time Microcap Intelligence Terminal",
 };
 

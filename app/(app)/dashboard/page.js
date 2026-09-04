@@ -7,11 +7,11 @@ import {
 } from "@/mocks/tokens";
 
 export const metadata = {
-  title: "Dashboard — Microcap Engine",
+  title: "Dashboard — Sherlog",
 };
 
 /**
- * /dashboard — the operational Microcap Engine dashboard (TASK 02),
+ * /dashboard — the operational Sherlog dashboard (TASK 02),
  * now backed by a simulated realtime stream (TASK 04). Information
  * architecture: header → global metrics → market status →
  * opportunities (with filters) + selected-token detail (metrics,

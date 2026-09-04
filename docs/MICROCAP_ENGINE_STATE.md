@@ -1,14 +1,37 @@
-# MICROCAP ENGINE — DEVELOPMENT STATE
+# SHERLOG — DEVELOPMENT STATE
 
-**Version:** 0.12.0
+**Version:** 0.12.1
 
 **Current phase:** PHASE 2 — DATA (closed)
 
-**Current task:** TASK 11 — ANALYTICS
+**Current task:** Rebrand (Sherlog) + Phase 1 final verification
 
 **Project status:** COMPLETED
 
 ## Completed
+
+- **Rebrand (Sherlog) + Phase 1 final verification** (not a numbered
+  roadmap task — cross-cutting aesthetic pass requested directly): new
+  green brand palette applied to `bg`/`surface`/`accent`/`positive`
+  (`app/globals.css`), with `surface-elevated` and `line`/`line-strong`
+  derived (not copied verbatim from the source palette) to keep WCAG
+  contrast at or above the original theme's level — verified by
+  computing contrast ratios, not eyeballed. `negative`/`warning`
+  (red/amber) deliberately kept unchanged to preserve risk-signal
+  legibility (TASK 07's `RISK: HIGH`/`NO TRADE` badges). Sherlog
+  wordmark logo added (`public/logo.png`, transparency confirmed) and
+  wired into `Topbar.js`, replacing the old text wordmark; page titles,
+  `DashboardHeader`, `package.json`, and the 3 main docs' H1 titles
+  renamed to Sherlog (in-code comment headers and historical CHANGELOG
+  entries deliberately left alone — see CHANGELOG 0.12.1 for the exact
+  scope boundary). Re-verified the entire Phase 1 surface after the
+  shared-component changes: `npm run lint`/`build` pass, every
+  Phase 1 + Phase 2 route returns its expected status code, logo/titles
+  render correctly with zero leftover old branding, compiled CSS
+  confirmed to carry the new token values, HLX/MRBL/hydration-fix
+  behavior all still correct. Not verified: actual visual appearance
+  (no browser/screenshot capability in this sandbox) — please eyeball
+  it yourself.
 
 - TASK 11 — ANALYTICS (closes PHASE 2): new `lib/data/analytics.js` —
   the **first read path in the app that queries the database** instead
