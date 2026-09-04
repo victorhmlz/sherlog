@@ -1,16 +1,46 @@
 # MICROCAP ENGINE — DEVELOPMENT STATE
 
-**Version:** 0.11.0
+**Version:** 0.12.0
 
-**Current phase:** PHASE 2 — DATA
+**Current phase:** PHASE 2 — DATA (closed)
 
-**Current task:** TASK 10 — HISTORICAL SNAPSHOTS
+**Current task:** TASK 11 — ANALYTICS
 
 **Project status:** COMPLETED
 
 ## Completed
 
-- TASK 10 — HISTORICAL SNAPSHOTS: new `lib/data/capture.js` —
+- TASK 11 — ANALYTICS (closes PHASE 2): new `lib/data/analytics.js` —
+  the **first read path in the app that queries the database** instead
+  of `mocks/tokens.js`. `getOverallStats`/`getSetupBreakdown`/
+  `getLatestSignalPerToken`/`getAnalyticsSummary` read back what
+  TASK 10 captured (total/buyable capture counts, avg score, distinct
+  days, per-setup breakdown, latest signal per token). All three
+  Drizzle queries verified via `.toSQL()` (no live DB needed) to
+  produce correct Postgres. `app/(app)/analytics/page.js` rewritten
+  from its TASK 01 placeholder into a real async Server Component,
+  `force-dynamic` so `next build` never queries at build time. New
+  `components/analytics/` — `SetupBreakdownCard`, `LatestSignalsTable`
+  (reuse existing Card/SectionHeader/SignalBadge, no new visual
+  primitives), `AnalyticsUnavailable` (distinct friendly states for "no
+  DATABASE_URL" vs. "reachable DB, zero captures yet"). No dependencies
+  added. `npm run lint`/`build` pass; `/analytics` manually verified to
+  return `200` with the correct empty state without `DATABASE_URL`,
+  zero impact on the rest of the app. Scope is read-only aggregation
+  over already-persisted data — never recomputes score/risk/signal,
+  and is NOT the Phase 6 backtesting/expectancy engine
+  (`docs/ARCHITECTURE.md` §10, TASK 19–21) — that's a separate, larger
+  task. **NOT verified with actual data rendered** (same sandbox
+  network restriction throughout Phase 2) — open `/analytics` yourself
+  once deployed/running locally to confirm it renders your real
+  captured signals sensibly.
+- TASK 10 — HISTORICAL SNAPSHOTS: **confirmed end-to-end against the
+  real Neon database** —
+  `{"ok":true,"tokensProcessed":10,"marketSnapshotsInserted":10,
+  "signalsInserted":10,"auctionRowsInserted":8}` (8, not 10 —
+  MRBL/PTRA have no auction, exactly as expected, confirming the
+  `status !== "NONE"` filter works against real inserted data). New
+  `lib/data/capture.js` —
   `captureSnapshot()` runs one capture pass over `mocks/tokens.js`
   (reusing TASK 04's `tickToken`, no new jitter logic), writing
   `tokens`/`market_snapshots`/`signals`/`auction_data` rows through the
@@ -292,11 +322,9 @@
 
 ## In progress
 
-- `npm run db:push` was confirmed successful against a real Neon
-  database (the TASK 09 tables exist for real now). You still need to
-  hit `/api/cron/capture-snapshots` yourself (locally, with
-  `DATABASE_URL` set) and confirm the capture actually writes rows —
-  see TASK 10's Verification notes above. Nothing else beyond TASK 10
+- Please open `/analytics` yourself (with `DATABASE_URL` set) and
+  confirm it renders your real captured signals sensibly — see
+  TASK 11's Verification notes above. Nothing else beyond TASK 11
   scope is in progress.
 
 ## Known issues
@@ -386,19 +414,21 @@ filled in when those integrations are actually built.
   stream (TASK 04) is a client-side `setInterval` simulation; the
   price/volume charts (TASK 05) read a deterministically generated mock
   series. TASK 09's database schema (`lib/data/db/`) is real
-  infrastructure — and, as of TASK 10, actively written to (via
-  `/api/cron/capture-snapshots`) — but nothing on the dashboard/
-  token-detail pages *reads* through it yet; they still read
+  infrastructure, actively written to (TASK 10, confirmed against real
+  data), and now — as of TASK 11 — actively read back for the
+  `/analytics` page. The dashboard/token-detail pages still read
   `mocks/tokens.js` exclusively and remain completely unaffected. There
   is still no blockchain/RPC integration, Long/Fomo integration, real
   WebSocket/SSE connection, wallet connection, or trading execution of
   any kind. Auction data, holders, and top-10 concentration remain
   static mock fixtures throughout (holder-analysis is TASK 14).
+  PHASE 2 — DATA is now closed.
 
 ## Next task
 
-TASK 11 — ANALYTICS (not started; do not proceed automatically). This
-closes PHASE 2 — likely reads back the `market_snapshots`/`signals`
-history TASK 10 writes and surfaces it somewhere in the UI; needs
-TASK 10's capture route to have actually run a few times first so
-there's something to analyze.
+TASK 12 — EVM ADAPTER (not started; do not proceed automatically).
+This opens PHASE 3 — ON-CHAIN and is the point where real, non-mock
+data first enters the app. Per `docs/ROADMAP.md`'s own note: "TASK 12
+... must not scrape data; only documented/authorized APIs and RPC
+endpoints are permitted." Likely needs a DECISION on which RPC
+provider/endpoint to use, similar to TASK 09's database decision.

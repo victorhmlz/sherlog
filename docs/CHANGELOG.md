@@ -1,5 +1,87 @@
 # CHANGELOG
 
+## 0.12.0 — TASK 11 (Analytics) — closes PHASE 2
+
+**Confirmed:** TASK 10's capture route was verified end-to-end against
+the real Neon database — `{"ok":true,"tokensProcessed":10,
+"marketSnapshotsInserted":10,"signalsInserted":10,
+"auctionRowsInserted":8}` (8, not 10 — MRBL/PTRA have no auction,
+exactly as expected).
+
+### Added
+- `lib/data/analytics.js` — the **first read path in the app that
+  queries the database** instead of `mocks/tokens.js`. Every other
+  page (dashboard, token detail) still reads mocks exclusively; this
+  one reads back what TASK 10 captured. The underlying data is still
+  from the mock simulation (no real on-chain source exists yet — EVM
+  Adapter is TASK 12), so these numbers describe "how the mock signals
+  looked over time," not real market performance — this task is about
+  the read/aggregation path being real, not the data itself yet.
+  - `getOverallStats`: total captures, buyable-capture count (via
+    Postgres `count(*) filter (where is_buyable)`), average score,
+    and distinct calendar days captured (`count(distinct
+    date_trunc('day', timestamp))`).
+  - `getSetupBreakdown`: capture count grouped by `setup` state.
+  - `getLatestSignalPerToken`: each token's most recent captured
+    signal (joins `signals`+`tokens`, dedupes to newest-per-token in
+    JS rather than a `DISTINCT ON` query — deliberate simplicity at
+    this project's tiny data scale, documented as such in code).
+  - `getAnalyticsSummary`: fetches all three concurrently for the page.
+- `app/(app)/analytics/page.js` — rewritten from its TASK 01
+  `RoutePlaceholder` into a real async Server Component.
+  `export const dynamic = "force-dynamic"` so `next build` never tries
+  to run the query at build time (when `DATABASE_URL` may not be
+  configured — same discipline as TASK 09/10). Shows 4 summary metric
+  cards, a signal-state breakdown, and a latest-capture-per-token list.
+- `components/analytics/SetupBreakdownCard.js`,
+  `LatestSignalsTable.js` — presentational, reuse existing `Card`/
+  `SectionHeader`/`SignalBadge`/`Badge` for visual consistency with the
+  rest of the app; no new visual primitives introduced.
+- `components/analytics/AnalyticsUnavailable.js` — friendly empty
+  state for two distinct, both-normal conditions: `DATABASE_URL` not
+  set (`getDb()` throws) vs. a reachable database with zero captures
+  yet (nothing for the cron route to have written). Each shows
+  different, actionable guidance rather than one generic message.
+
+### Verification
+- `npm run lint` / `npm run build` — PASS; `/analytics` compiles as a
+  dynamic (`ƒ`) route, confirming it won't be prerendered at build
+  time.
+- All three Drizzle queries verified via `.toSQL()` (inspects the
+  generated SQL without executing it — no live database needed) and
+  confirmed to produce correct, valid Postgres: the aggregate query's
+  `count(*) filter (...)`/`avg(...)`/`date_trunc(...)` all render
+  correctly; the breakdown query's `GROUP BY`/`ORDER BY` are correct;
+  the join query's `INNER JOIN ... ON` uses the right column names
+  from the TASK 09 schema.
+- `/analytics` manually verified against the running dev server
+  without `DATABASE_URL` set: returns `200` (not a crash) with the
+  "Database not connected" empty state, and `/dashboard` remains
+  completely unaffected.
+- **Not verified with actual data rendered**: the "has real rows"
+  render path (summary cards, breakdown, latest-per-token list against
+  your actual captured signals) was not seen from this sandbox — same
+  network restriction as TASK 09/10. You already have at least one
+  real capture from TASK 10's verification, so **please open
+  `/analytics` yourself** (locally or once deployed) and confirm it
+  renders sensibly — the query syntax is confirmed correct, but an
+  actual rendered screen is worth a look.
+
+### Decisions
+- No dependencies added.
+- Scope is read-only analytics over what TASK 10 already persisted —
+  no new writes, no recomputation of score/risk/signal (this module
+  never calls `computeScore`/`computeRisk`/`computeSignal`, it only
+  reads their already-persisted output). The full backtesting/
+  expectancy engine described in `docs/ARCHITECTURE.md` §10 is Phase 6
+  (TASK 19–21), a different, much larger task — this is explicitly the
+  Phase 2 "Analytics" (aggregate what's been captured), not that.
+- `getLatestSignalPerToken` dedupes in JavaScript rather than using a
+  Postgres `DISTINCT ON` query. At this project's actual scale (a
+  handful of mock tokens, at most one capture/day on Vercel Hobby) the
+  row count fetched is always tiny; the simpler, more obviously-correct
+  approach was chosen over a marginally more efficient one.
+
 ## 0.11.0 — TASK 10 (Historical Snapshots)
 
 **Follow-up confirmed:** `npm run db:push` (TASK 09) was run
