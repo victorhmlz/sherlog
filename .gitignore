@@ -33,6 +33,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# ...except the checked-in template (TASK 09) — documents expected
+# variable names only, never real values.
+!.env.example
 
 # vercel
 .vercel

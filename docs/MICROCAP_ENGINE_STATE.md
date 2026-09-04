@@ -1,15 +1,42 @@
 # MICROCAP ENGINE — DEVELOPMENT STATE
 
-**Version:** 0.9.0
+**Version:** 0.10.0
 
-**Current phase:** PHASE 1 — UI / MOCK ENGINE
+**Current phase:** PHASE 2 — DATA
 
-**Current task:** TASK 08 — SIGNAL ENGINE
+**Current task:** TASK 09 — DATABASE
 
 **Project status:** COMPLETED
 
 ## Completed
 
+- TASK 09 — DATABASE (PHASE 1 → PHASE 2): decisions made together
+  (this task was explicitly flagged DECISION REQUIRED, not decided
+  unilaterally): **Drizzle ORM** + **Neon** (free tier, Postgres only)
+  via the `neon-http` driver (Vercel-serverless-compatible, no
+  connection pooling needed). New `lib/data/db/schema.js` — 5 tables
+  (`tokens`, `market_snapshots`, `auction_data`, `signals`,
+  `paper_trades`) translating `docs/ARCHITECTURE.md` §5's conceptual
+  shapes into real Postgres, `numeric` for all price fields, indexed on
+  `(token_id, timestamp)` throughout. New `lib/data/db/client.js` —
+  lazy `getDb()`, never touches `DATABASE_URL` at import time, so its
+  mere existence can't break the build; throws a clear setup error if
+  the env var is missing. New `drizzle.config.js`, initial migration
+  committed at `drizzle/0000_rich_jackpot.sql`, `.env.example`
+  (`.gitignore` gained a `!.env.example` exception — was silently
+  blocking it before), and `db:generate`/`db:push`/`db:studio` npm
+  scripts. **Scope is infrastructure only** — no route or component
+  reads/writes through this schema; dashboard/token-detail keep reading
+  `mocks/tokens.js` exclusively, unaffected. `npm run lint`/`build`
+  pass. `db:generate` verified fully offline (no live DB needed,
+  produced correct SQL for all 5 tables/FKs/indexes); `db:push`
+  verified to fail with a clear, expected error without `DATABASE_URL`;
+  `getDb()` verified to throw its intended actionable error. No live
+  Neon instance was reachable in this build environment (network
+  egress restricted to package registries), so an actual `db:push`
+  against a real database and any real query were NOT run end-to-end —
+  **you'll need to run `npm run db:push` yourself** once `.env` has a
+  real `DATABASE_URL` to actually create these tables.
 - TASK 08 — SIGNAL ENGINE: new `lib/signal/signalEngine.js` —
   `computeSignal(token)`, the project's first real Signal Engine, per
   the conceptual `Signal` shape in `docs/ARCHITECTURE.md` §5.
@@ -232,7 +259,11 @@
 
 ## In progress
 
-- Nothing beyond TASK 08 scope is in progress.
+- You still need to run `npm run db:push` against your real Neon
+  `DATABASE_URL` to actually create the TASK 09 tables — the schema
+  and migration exist in the repo, but were never applied to a live
+  database from this build environment (see TASK 09's Verification
+  notes above). Nothing else beyond TASK 09 scope is in progress.
 
 ## Known issues
 
@@ -273,19 +304,25 @@ dependencies:
   react: 19.2.8
   react-dom: 19.2.8
   recharts: ^3.10
+  drizzle-orm: ^0.45
+  @neondatabase/serverless: ^1.1
 
 devDependencies:
   @tailwindcss/postcss: ^4
   eslint: ^9
   eslint-config-next: 16.3.4
   tailwindcss: ^4
+  drizzle-kit: ^0.31
+  dotenv: ^17
 ```
 
 `recharts` was added in TASK 05 for the token detail page's price/
-volume charts — the first dependency added beyond the `create-next-app`
-defaults. No database client or WebSocket library has been installed
-yet — these will be added only when a concrete task needs them (per
-project rule: don't install "just in case").
+volume charts. `drizzle-orm`/`@neondatabase/serverless` (runtime) and
+`drizzle-kit`/`dotenv` (dev, CLI-only) were added in TASK 09 for the
+database schema/client — see that task's CHANGELOG entry for the
+Drizzle-vs-Prisma-vs-Kysely and Neon-vs-Supabase-vs-Docker decisions.
+No WebSocket library has been installed yet — will be added only when
+a concrete task needs it.
 
 ## Environment
 
@@ -305,24 +342,27 @@ filled in when those integrations are actually built.
 - This is a greenfield scaffold, not an audited legacy system — future
   sessions should not assume any business logic, data model, or API
   integration exists beyond what is listed under "Completed" above.
-- TASK 01–08 are UI/engine-only in the sense that no real data source
-  exists. There is still no database, blockchain/RPC integration,
-  Long/Fomo integration, real WebSocket/SSE connection, wallet
-  connection, or trading execution of any kind. TASK 06's Score Engine,
-  TASK 07's Risk Engine, and TASK 08's Signal Engine are real,
-  deterministic logic — not mock data — but Score/Risk each still pass
-  2 of their inputs through an authored seed (`fomo`/`price` for score;
-  `contractRisk`/`suspiciousWallets` for risk) because no adapter or
-  on-chain analysis exists for those yet; Signal needs no seed at all.
-  The "realtime" stream (TASK 04) is a client-side `setInterval`
-  simulation; the price/volume charts (TASK 05) read a deterministically
-  generated mock series — neither is a real data source, and there is
-  still no persistence layer (TASK 09/10). Auction data, holders, and
-  top-10 concentration remain static mock fixtures throughout
-  (holder-analysis is TASK 14).
+- TASK 01–08 (Phase 1) are UI/engine-only in the sense that no real
+  data source exists. TASK 06's Score Engine, TASK 07's Risk Engine,
+  and TASK 08's Signal Engine are real, deterministic logic — not mock
+  data — but Score/Risk each still pass 2 of their inputs through an
+  authored seed (`fomo`/`price` for score; `contractRisk`/
+  `suspiciousWallets` for risk) because no adapter or on-chain analysis
+  exists for those yet; Signal needs no seed at all. The "realtime"
+  stream (TASK 04) is a client-side `setInterval` simulation; the
+  price/volume charts (TASK 05) read a deterministically generated mock
+  series. TASK 09's database schema (`lib/data/db/`) is real
+  infrastructure, but nothing reads or writes through it yet — the
+  dashboard/token-detail pages still read `mocks/tokens.js` exclusively
+  and remain completely unaffected. There is still no blockchain/RPC
+  integration, Long/Fomo integration, real WebSocket/SSE connection,
+  wallet connection, or trading execution of any kind. Auction data,
+  holders, and top-10 concentration remain static mock fixtures
+  throughout (holder-analysis is TASK 14).
 
 ## Next task
 
-TASK 09 — DATABASE (not started; do not proceed automatically). Note:
-per ROADMAP.md, this is the first task requiring a DECISION on
-PostgreSQL schema and driver/ORM choice before implementation.
+TASK 10 — HISTORICAL SNAPSHOTS (not started; do not proceed
+automatically). This is the task that starts actually writing to the
+TASK 09 schema — requires `DATABASE_URL` to be set to a real,
+`db:push`-ed Neon database first.

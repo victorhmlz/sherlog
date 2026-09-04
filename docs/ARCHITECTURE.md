@@ -32,7 +32,7 @@ its component signals (e.g. "Score 83/100 because: Volume acceleration
 | Styling    | Tailwind CSS v4                     | via `@tailwindcss/postcss` |
 | Linting    | ESLint 9 + `eslint-config-next`     | |
 | Backend    | Node.js 22.x, Next.js route handlers (`app/api/`) | Server functions/workers to be added as needed |
-| Database   | PostgreSQL                           | **NOT YET IMPLEMENTED** — schema is DECISION REQUIRED in a later task |
+| Database   | PostgreSQL (Neon), Drizzle ORM      | Schema + client added in TASK 09 (`lib/data/db/`) — no route reads/writes through it yet, see TASK 10 |
 | Realtime   | WebSockets / SSE                     | **NOT YET IMPLEMENTED** |
 | Blockchain | EVM-compatible, RPC / WS-RPC         | **NOT YET IMPLEMENTED** |
 | Data sources | Long, on-chain data, authorized external APIs | **NOT YET IMPLEMENTED** — adapters are interfaces only, TODO |
@@ -99,8 +99,14 @@ Rules:
 
 ## 5. Conceptual Data Model
 
-These are conceptual shapes for future persistence/design work — no
-database schema is finalized yet (DECISION REQUIRED in TASK 09).
+These conceptual shapes were implemented as real PostgreSQL tables via
+Drizzle ORM in TASK 09 — see `lib/data/db/schema.js` for the actual
+column types/constraints/indexes, and `docs/CHANGELOG.md`'s 0.10.0
+entry for the specific translation decisions (e.g. `numeric` for all
+price-like fields, `momentumScore` collapsing `volume`+`buyers`). No
+route or component reads/writes through this schema yet — the schema
+existing is TASK 09's entire scope; wiring it up is TASK 10 —
+HISTORICAL SNAPSHOTS.
 
 ```js
 // Token

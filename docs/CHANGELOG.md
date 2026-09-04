@@ -1,5 +1,111 @@
 # CHANGELOG
 
+## 0.10.0 — TASK 09 (Database)
+
+**DECISIONS (made together, not unilaterally, per ROADMAP.md's
+explicit "DECISION REQUIRED" flag on this task):**
+- **ORM/driver: Drizzle ORM**, over Prisma/Kysely/raw `pg`. No codegen
+  step (works cleanly with Turbopack fast refresh), ~7.4kB footprint,
+  native edge/serverless support, schema-as-plain-JS matches this
+  codebase's existing style (`lib/scoring`, `lib/risk`, `lib/signal`).
+- **Hosting: Neon**, free tier, Postgres only (no bundled
+  auth/storage/realtime — not needed here). Chosen over Supabase
+  (heavier, free tier smaller at 500MB) and Docker-local (this app is
+  meant to eventually deploy on Vercel, where a hosted Postgres is
+  needed anyway). Personal-use scale — no paid/HA tier needed; Neon's
+  branch feature covers a lightweight "prod vs. experiment" split
+  within the same free project if ever wanted.
+- Driver: `drizzle-orm/neon-http` + `@neondatabase/serverless` (HTTP,
+  not TCP) — the only driver combination that works from Vercel
+  serverless functions without connection-pooling infrastructure.
+
+### Added
+- `lib/data/db/schema.js` — Drizzle table definitions translating
+  `docs/ARCHITECTURE.md` §5's conceptual `Token`/`MarketSnapshot`/
+  `AuctionData`/`Signal`/`PaperTrade` shapes into real Postgres tables:
+  `tokens`, `market_snapshots`, `auction_data`, `signals`,
+  `paper_trades`. All price/amount fields use `numeric` (arbitrary
+  precision), not `real`/`double precision` — microcap prices
+  routinely need far more significant digits than floats reliably
+  hold. Every time-series table is indexed on `(token_id, timestamp)`
+  (or `entry_time` for `paper_trades`), since "snapshots/signals for
+  token X, ordered by time" is the only query shape that matters here.
+  `tokens` has a unique index on `(address, chain_id)`, not `address`
+  alone — the same address could exist on more than one chain.
+- `lib/data/db/client.js` — `getDb()`, a lazily-initialized Drizzle
+  client. Deliberately does not touch `process.env.DATABASE_URL` at
+  import time, only when actually called, so this file existing in the
+  tree never breaks `next build` or any route that doesn't use it.
+  Throws a clear, actionable error ("copy .env.example to .env...") if
+  `DATABASE_URL` is missing, rather than a generic connection failure.
+- `drizzle.config.js` — `drizzle-kit` CLI config (schema path,
+  migrations output folder, Postgres dialect). Only used by the CLI,
+  never imported by the app.
+- `drizzle/0000_rich_jackpot.sql` (+ `drizzle/meta/`) — the initial
+  migration, generated from the schema above via `drizzle-kit
+  generate`. Committed, as Drizzle migrations are meant to be — this
+  is the schema's version history, not a build artifact.
+- `.env.example` — documents the expected `DATABASE_URL` variable (a
+  Neon connection-string placeholder, never a real value).
+  `.gitignore`'s `.env*` rule got a `!.env.example` exception so this
+  template is actually trackable — it wasn't before, an oversight
+  worth calling out since it silently would have blocked committing
+  the one env file meant to be shared.
+- `package.json`: `db:generate` (`drizzle-kit generate` — diffs the
+  schema against migration history, fully offline, needs no live DB),
+  `db:push` (`drizzle-kit push` — directly syncs schema to a live DB,
+  for quick dev iteration), `db:studio` (`drizzle-kit studio` — visual
+  browser, needs a live DB).
+
+### Changed
+- `docs/ARCHITECTURE.md` §2's stack table and §5's conceptual-model
+  section updated to reflect that the schema now exists concretely
+  (previously "NOT YET IMPLEMENTED — DECISION REQUIRED").
+
+### Verification
+- `npm run lint` / `npm run build` — PASS; existing routes/pages
+  completely unaffected (nothing in the app imports `lib/data/db/*`
+  yet — that's TASK 10).
+- `npm run db:generate` — PASS, fully offline: produced correct SQL
+  for 5 tables (18 columns on the widest, `market_snapshots`), 4
+  foreign keys with `ON DELETE CASCADE`, 5 indexes, without any
+  `DATABASE_URL` configured — confirms `generate` never needs a
+  reachable database.
+- `npm run db:push` without `DATABASE_URL` set — failed with
+  drizzle-kit's own clear parameter error, as expected (this command
+  DOES need a live connection — verified the failure mode is legible,
+  not a stack trace).
+- `getDb()` without `DATABASE_URL` set — verified it throws the
+  intended actionable error message rather than crashing on a missing
+  client or a raw driver exception.
+- No live Neon instance was available in the sandbox this was built in
+  (network egress is restricted to package registries; a hosted
+  Postgres instance couldn't be reached), so `db:push`/`db:studio`
+  against a real database, and any actual read/write query, were NOT
+  executed end-to-end here. **You'll need to run `npm run db:push`
+  yourself once `.env` has a real `DATABASE_URL`** to actually create
+  these tables on your Neon project — this patch only gets you to "the
+  schema is ready to push."
+
+### Decisions
+- Scope is infrastructure only: no route or component reads/writes
+  through this schema. The dashboard/token-detail pages are completely
+  unaffected and keep reading `mocks/tokens.js` exclusively, same as
+  every task since TASK 01 — wiring real reads/writes is TASK 10 —
+  HISTORICAL SNAPSHOTS, not this one.
+- `signals.momentumScore` collapses the Score Engine's separate
+  `volume`/`buyers` components (see `lib/scoring/scoreEngine.js`) into
+  one column, matching `docs/ARCHITECTURE.md` §5's persisted shape
+  exactly rather than inventing new columns beyond what the
+  architecture doc specifies. The display-level 8-component breakdown
+  (`SCORE_COMPONENT_MAX`) stays exactly as-is; this table is a
+  narrower, persisted view of it.
+- IDs are `uuid` with `gen_random_uuid()` defaults (built into Postgres
+  since v13, confirmed no extension needed on Neon) rather than serial
+  integers — safer for a schema that may eventually need
+  multi-source/concurrent inserts (on-chain adapters, Phase 3) without
+  a central sequence.
+
 ## 0.9.0 — TASK 08 (Signal Engine)
 
 ### Added
