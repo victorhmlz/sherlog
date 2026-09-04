@@ -1,5 +1,78 @@
 # CHANGELOG
 
+## 0.14.0 — TASK 13 (Swap Indexing)
+
+### Added
+- `lib/chain/swaps.js` — reads real `Swap` events from a Uniswap
+  V2-shaped pool and aggregates them into buy/sell/volume figures —
+  the first real, non-mock source for `MarketSnapshot`'s `volume`,
+  `buyPressure`, and unique-buyer/seller fields (docs/ARCHITECTURE.md
+  §5).
+  - `fetchPoolTokens(chainKey, poolAddress)` — reads `token0`/`token1`.
+  - `fetchSwapLogs(chainKey, poolAddress, { fromBlock, toBlock })` —
+    `eth_getLogs` for the pool's `Swap` event over an explicit block
+    range, decoded into named fields.
+  - `summarizeSwaps(logs, { token0, token1, targetToken })` — pure,
+    network-free aggregation: classifies each swap as a buy or sell of
+    `targetToken` (out of the pool = buy, in = sell), and computes
+    total swaps, buy/sell counts, buy/sell volume (in the pool's other
+    token's raw units — not USD), unique buyer/seller counts, and
+    `buyPressure` (0–100, `null` when there are zero swaps rather than
+    `NaN`). Throws if `targetToken` isn't actually one of the pool's
+    two tokens.
+  - `indexPoolSwaps(chainKey, poolAddress, targetToken, { fromBlock,
+    toBlock })` — the 3 steps above combined.
+- `app/api/debug/swap-index` — manual verification endpoint;
+  `?chain=&pool=&targetToken=&fromBlock=&toBlock=` (block range
+  defaults to the last 2000 blocks if omitted). Not called by anything
+  else in the app.
+
+### Verification
+- `npm run lint` / `npm run build` — PASS; `/api/debug/swap-index`
+  compiles as a dynamic route.
+- `summarizeSwaps` verified offline (pure function, no network) against
+  5 fabricated scenarios: mixed buys/sells with `targetToken = token0`
+  (correct counts, volumes, `buyPressure = 67`); the same pool
+  re-targeted with `targetToken = token1` (direction logic still
+  correct with the opposite token ordering); a `targetToken` that
+  isn't in the pool (throws, as intended); zero swaps
+  (`buyPressure: null`, not `NaN`); all-buys (`buyPressure: 100`).
+- `/api/debug/swap-index` manually verified against the running dev
+  server: missing `chain` → `400` with the valid-chains list; an
+  unsupported `chain` (e.g. `SOL`, not EVM) → same `400`; missing
+  `pool`/`targetToken` → `400` naming both required; a fully-specified
+  request against a real chain (`BASE`) reaches the RPC call correctly
+  (confirmed it got as far as calling `eth_blockNumber` to compute the
+  default block range) before failing with **this sandbox's now-
+  familiar network restriction** (`403 Host not in allowlist:
+  mainnet.base.org`) — not the code's fault. `/dashboard` unaffected
+  throughout.
+- **Not verified against a real pool's actual swap history** — needs a
+  real pool address, which this sandbox can't reach regardless. Please
+  hit `/api/debug/swap-index` yourself with a real pool (look one up
+  for any token on dexscreener.com and copy its pool/pair contract
+  address) and confirm the buy/sell/volume numbers look sane.
+
+### Decisions
+- No dependencies added — built entirely on TASK 12's `getEvmClient`.
+- Uniswap V3 pools are explicitly out of scope (different event shape
+  entirely — concentrated liquidity has no simple `amount0In`/
+  `amount1In`). A V3 indexer, if ever needed, is separate, larger work.
+- Deliberately does NOT do time-window aggregation ("last 5 minutes")
+  — average block time varies by chain and by network conditions
+  (Arbitrum's own docs: block production "depends entirely on chain
+  usage," not a fixed cadence), so hardcoding a minutes→blocks
+  conversion would present a guess as a fact. The block-range API is
+  exact; turning a desired time window into a block range is left to
+  the caller.
+- Does NOT do pool discovery (given a token, which pool has its
+  liquidity) — that's TASK 15 — LIQUIDITY ANALYSIS. This module
+  requires a known pool address.
+- Volume is reported in the pool's quote-token raw units, not USD — no
+  price oracle exists in this project to do that conversion.
+- No route or component reads through this yet — pure infrastructure,
+  same precedent as TASK 09/12.
+
 ## 0.13.1 — Hotfix (floating-point noise in Age display)
 
 ### Fixed

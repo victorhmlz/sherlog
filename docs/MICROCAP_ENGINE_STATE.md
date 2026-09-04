@@ -1,15 +1,42 @@
 # SHERLOG — DEVELOPMENT STATE
 
-**Version:** 0.13.1
+**Version:** 0.14.0
 
 **Current phase:** PHASE 3 — ON-CHAIN
 
-**Current task:** TASK 12 — EVM ADAPTER
+**Current task:** TASK 13 — SWAP INDEXING
 
 **Project status:** COMPLETED
 
 ## Completed
 
+- TASK 13 — SWAP INDEXING: new `lib/chain/swaps.js` — reads real
+  `Swap` events from a Uniswap V2-shaped pool (the ABI most V2-style
+  DEX forks across all 4 chains clone byte-for-byte; V3 explicitly out
+  of scope — different event shape). `fetchPoolTokens`/
+  `fetchSwapLogs`/`summarizeSwaps`/`indexPoolSwaps` — the first real
+  source for `MarketSnapshot`'s `volume`/`buyPressure`/unique-buyer-
+  seller fields. Operates on an explicit block range, not a "last N
+  minutes" window — average block time varies by chain/network
+  conditions (Arbitrum's own docs warn it isn't a fixed cadence), so a
+  hardcoded minutes→blocks conversion would present a guess as fact;
+  translating a time window into blocks is left to the caller. Does
+  NOT do pool discovery (TASK 15) or USD conversion (no price oracle
+  exists). New `app/api/debug/swap-index` manual verification route.
+  No dependencies added — built entirely on TASK 12's `getEvmClient`.
+  `npm run lint`/`build` pass. `summarizeSwaps` (pure, no network)
+  verified offline against 5 scenarios: mixed buys/sells with correct
+  direction/volume/`buyPressure`; the same pool with token0/token1
+  swapped (direction logic still correct); an invalid `targetToken`
+  (throws); zero swaps (`buyPressure: null`, not `NaN`); all-buys
+  (`buyPressure: 100`). `/api/debug/swap-index` manually verified:
+  parameter validation (`400`s) all correct; a fully-specified request
+  reached the real RPC call (confirmed via the `eth_blockNumber` call
+  it made) before hitting this sandbox's now-familiar network
+  restriction — not a code issue. **Not verified against a real pool's
+  actual swap history** — please hit `/api/debug/swap-index` yourself
+  with a real pool address (look one up on dexscreener.com for any
+  token) and confirm the numbers look sane.
 - **Hotfix (post-TASK 12):** fixed `formatAge` rendering
   floating-point noise (e.g. "6.399999999999995m") on the live
   dashboard instead of a clean "6m" — the sub-60-minutes branch wasn't
@@ -384,10 +411,10 @@
 
 ## In progress
 
-- Please hit `/api/debug/evm-status` yourself (no signup, no env vars
-  needed) and confirm it returns real block numbers for all 4 EVM
-  chains — see TASK 12's Verification notes above. Nothing else beyond
-  TASK 12 scope is in progress.
+- Please hit `/api/debug/swap-index` yourself with a real pool address
+  (any token on dexscreener.com will show one) and confirm the buy/
+  sell/volume numbers look sane — see TASK 13's Verification notes
+  above. Nothing else beyond TASK 13 scope is in progress.
 
 ## Known issues
 
@@ -485,18 +512,21 @@ filled in when those integrations are actually built.
   dashboard/token-detail pages still read `mocks/tokens.js` exclusively
   and remain completely unaffected. TASK 12 added real, read-only EVM
   RPC access (`lib/chain/`) — the first real (non-mock) data source in
-  the project — but nothing reads through it yet either; it can fetch
-  a real token's on-chain identity (name/symbol/decimals/totalSupply)
-  but not price, liquidity, volume, or holders (that needs swap/
-  transfer indexing over time — TASK 13–15). There is still no Long/
-  Fomo integration, real WebSocket/SSE connection, wallet connection,
-  or trading execution of any kind. Auction data, holders, and top-10
-  concentration remain static mock fixtures throughout.
+  the project. TASK 13 added real swap-log indexing on top of it
+  (`lib/chain/swaps.js`) — real buy/sell/volume figures are now
+  computable for a KNOWN pool address, but nothing reads through
+  either yet; pool discovery (given a token, which pool to index) is
+  still TASK 15, and holder/concentration data is still TASK 14. There
+  is still no Long/Fomo integration, real WebSocket/SSE connection,
+  wallet connection, or trading execution of any kind. Auction data,
+  holders, and top-10 concentration remain static mock fixtures
+  throughout.
 
 ## Next task
 
-TASK 13 — SWAP INDEXING (not started; do not proceed automatically).
-Builds on TASK 12's EVM clients to index swap transactions over time —
-the first source of real volume/buy-pressure/momentum data, and a
-prerequisite for TASK 15 (liquidity/price discovery, which needs to
-identify the right pool from swap activity).
+TASK 14 — HOLDER ANALYSIS (not started; do not proceed automatically).
+The remaining piece before TASK 15 (liquidity/price discovery) can
+assemble a full real `NormalizedTokenData` — reads token holder
+distribution (top1/top5/top10 concentration) from chain data, likely
+via `Transfer` event indexing similar in spirit to TASK 13's `Swap`
+indexing.

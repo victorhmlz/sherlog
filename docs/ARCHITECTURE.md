@@ -201,9 +201,12 @@ TASK 00.
 - EVM adapter: RPC + WS-RPC, on-chain swap/holder indexing.
   Read-only RPC client + ERC-20 identity reads implemented in TASK 12
   (`lib/chain/`) — viem, public RPC endpoints (no provider signup;
-  `RPC_URL_<CHAIN>` env vars can override per chain). Swap indexing,
-  holder analysis, and liquidity/price discovery are NOT implemented —
-  TASK 13–15.
+  `RPC_URL_<CHAIN>` env vars can override per chain). Uniswap V2-style
+  swap-log indexing (real buy/sell/volume figures for a known pool
+  address) implemented in TASK 13 (`lib/chain/swaps.js`) — V3 pools,
+  pool discovery, and USD conversion are explicitly out of scope there.
+  Holder analysis and liquidity/price (pool) discovery are NOT
+  implemented — TASK 14–15.
 - Long adapter: auction data (progress, expected progress, efficiency).
   Not implemented — TASK 16–17. No scraping; only documented/authorized
   APIs.
