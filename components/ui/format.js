@@ -32,9 +32,20 @@ export function formatMultiplier(value) {
 }
 
 /** Format a token age given in minutes into a compact "Xm/Xh/Xd" label. */
+/**
+ * Format an age in minutes as "Xm"/"Xh"/"Xd". Always rounds to a whole
+ * number, even in the sub-60-minutes branch: `ageMinutes` ticks live
+ * (TASK 04's `tickToken` adds `elapsedMs / 60_000` — a non-terminating
+ * binary fraction — every 4 seconds), so after enough ticks it drifts
+ * to values like `6.399999999999995` purely from floating-point
+ * accumulation. Rendering that raw was a real bug (visible on the live
+ * dashboard after a few minutes), not a display choice — the two other
+ * branches already rounded; this one just hadn't needed to before
+ * TASK 04 existed.
+ */
 export function formatAge(minutes) {
   if (minutes === null || minutes === undefined) return "—";
-  if (minutes < 60) return `${minutes}m`;
+  if (minutes < 60) return `${Math.round(minutes)}m`;
   if (minutes < 1440) return `${Math.round(minutes / 60)}h`;
   return `${Math.round(minutes / 1440)}d`;
 }

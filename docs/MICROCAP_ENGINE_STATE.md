@@ -1,6 +1,6 @@
 # SHERLOG — DEVELOPMENT STATE
 
-**Version:** 0.13.0
+**Version:** 0.13.1
 
 **Current phase:** PHASE 3 — ON-CHAIN
 
@@ -10,6 +10,13 @@
 
 ## Completed
 
+- **Hotfix (post-TASK 12):** fixed `formatAge` rendering
+  floating-point noise (e.g. "6.399999999999995m") on the live
+  dashboard instead of a clean "6m" — the sub-60-minutes branch wasn't
+  rounding, unlike the hour/day branches. Caused by TASK 04's live tick
+  repeatedly adding a non-terminating fraction to `ageMinutes`. See
+  CHANGELOG 0.13.1. Version number not bumped as a full task — a
+  correctness fix to existing display code.
 - TASK 12 — EVM ADAPTER (opens PHASE 3): decisions made together
   (per ROADMAP.md's authorized-APIs-only constraint on this task):
   **viem** (read-only, no wallet/signer — matches this project never

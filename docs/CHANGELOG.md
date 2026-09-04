@@ -1,5 +1,33 @@
 # CHANGELOG
 
+## 0.13.1 — Hotfix (floating-point noise in Age display)
+
+### Fixed
+- `components/ui/format.js:formatAge` — the sub-60-minutes branch
+  interpolated the raw `minutes` value with no rounding
+  (`` `${minutes}m` ``), unlike the hour/day branches which already
+  used `Math.round`. Found live on the dashboard (screenshot from the
+  project owner): ages rendering as e.g. "6.399999999999995m" instead
+  of "6m". Root cause: TASK 04's `tickToken` adds `elapsedMs / 60_000`
+  (a non-terminating binary fraction — `4000/60000 =
+  0.06666666666666667`) to `ageMinutes` every 4 seconds; after a few
+  ticks this accumulates ordinary floating-point rounding noise. The
+  original static mock fixtures were always clean integers, so this
+  branch never needed rounding until TASK 04's live stream started
+  mutating the value repeatedly.
+- Fix: round in all three branches, not just two —
+  `` `${Math.round(minutes)}m` ``. All 3 call sites
+  (`TokenDetailHeader.js`, `OpportunitiesTable.js`,
+  `SelectedTokenPanel.js`) go through this one function, so the fix
+  covers every place age is displayed.
+
+### Verification
+- `npm run lint` / `npm run build` — PASS.
+- Reproduced the exact failure with a standalone script (start at 6,
+  add `4000/60000` six times → `6.399999999999999`) and confirmed the
+  fixed function returns `"6m"`; also checked a longer run (100+
+  ticks) stays clean (`"22m"`, no drift creeping back in).
+
 ## 0.13.0 — TASK 12 (EVM Adapter) — opens PHASE 3
 
 **DECISIONS (made together, per ROADMAP.md's "TASK 12 ... must not
