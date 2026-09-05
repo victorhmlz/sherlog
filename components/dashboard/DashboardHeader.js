@@ -20,7 +20,7 @@ export default function DashboardHeader({
     <div className="flex flex-col gap-3 border-b border-line px-4 py-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <div className="flex items-center gap-2">
-          <h1 className="text-lg font-semibold tracking-tight text-text-primary">
+          <h1 className="text-xl font-bold tracking-tight text-text-primary">
             Sherlog
           </h1>
           <Badge tone="neutral">MOCK DATA</Badge>

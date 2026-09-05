@@ -6,36 +6,30 @@
  * reference these via Tailwind utility classes (bg-surface, text-muted,
  * border-line, etc.) rather than hardcoding hex values.
  *
- * Brand palette (rebrand, see docs/CHANGELOG.md): bg/surface/
- * surface-elevated/accent/positive are drawn from Sherlog's green
- * palette (#0A0A0B, #111D11, #0D411F, #177C39, #3AD35C).
- * `surface-elevated` uses a derived, less-saturated tone (#142218)
- * rather than the palette's #0D411F directly — that color is
- * noticeably brighter than the others, and `surface-elevated` backs
- * hovers/badges/meter-tracks everywhere in the app; using it at full
- * saturation dropped muted-text contrast well below the original
- * theme's (already borderline) level. `line`/`line-strong` are
- * likewise derived (dark, desaturated greens) — hairline borders were
- * never meant to be a flagged brand color, just a subtle separator.
- * `negative` (red) and `warning` (amber) are deliberately KEPT
- * UNCHANGED from the original theme, not pulled into the green
- * palette — this app uses red/amber specifically to flag risk
- * (`RISK: HIGH`, `NO TRADE`, `FALLING` liquidity, etc.), and an
- * all-green UI would erase that signal exactly where it matters most.
- * `positive` was moved onto the same brand green as `accent` (was a
- * separate teal, `#3fb68b`) — "good" and "brand" converging on one
- * green reads as intentional here, not redundant. Text colors are
- * unchanged for legibility; the palette has no light tones suited to
- * body text.
+ * Visual language (redesign — see docs/CHANGELOG.md): inspired by
+ * Genesis Block's (genesisblockchain.io) pure-black canvas and
+ * gradient-stroke wireframe geometry, recolored into Sherlog's own
+ * green rather than that site's cyan-to-violet. `bg` moved to true
+ * black (`#000000`, was `#0a0a0b`) — Genesis Block's reference point,
+ * and strictly higher-contrast against every text/semantic color, not
+ * just a copy for its own sake (verified via contrast ratios, not
+ * eyeballed — see below). `wireframe-start`/`wireframe-end` are new:
+ * the two-stop gradient used by the geometric icon system in empty
+ * states (`components/ui/WireframeIcon.js`) — Sherlog's equivalent of
+ * Genesis Block's hero cube, deliberately reserved for those "moment"
+ * screens rather than smeared across every card, per this app's own
+ * restraint principle (spend boldness in one place).
+ * `negative`/`warning` remain UNCHANGED from the original rebrand —
+ * still the app's only red/amber, still reserved for risk signals.
  * --------------------------------------------------------------------- */
 
 :root {
   /* Surfaces */
-  --color-bg: #0a0a0b;
-  --color-surface: #111d11;
-  --color-surface-elevated: #142218;
-  --color-line: #1c2e1f;
-  --color-line-strong: #24402a;
+  --color-bg: #000000;
+  --color-surface: #0d1a10;
+  --color-surface-elevated: #122415;
+  --color-line: #1a2e1e;
+  --color-line-strong: #234029;
 
   /* Text */
   --color-text-primary: #f4f6f8;
@@ -51,6 +45,10 @@
   --color-warning-dim: #3a301a;
   --color-accent: #3ad35c;
   --color-accent-dim: #163d24;
+
+  /* Wireframe icon gradient (empty-state geometry only — see WireframeIcon.js) */
+  --color-wireframe-start: #0f5c2e;
+  --color-wireframe-end: #3ad35c;
 
   /* Radius */
   --radius-sm: 3px;
@@ -77,6 +75,9 @@
   --color-warning-dim: var(--color-warning-dim);
   --color-accent: var(--color-accent);
   --color-accent-dim: var(--color-accent-dim);
+
+  --color-wireframe-start: var(--color-wireframe-start);
+  --color-wireframe-end: var(--color-wireframe-end);
 
   --radius-sm: var(--radius-sm);
   --radius-md: var(--radius-md);
@@ -148,6 +149,23 @@ body {
 
 .animate-live-pulse {
   animation: live-pulse 2s ease-in-out infinite;
+}
+
+/* Slow, deliberate breathing glow for WireframeIcon — the one
+   orchestrated motion moment on empty-state screens, not a hover
+   effect scattered across every element. */
+@keyframes wireframe-breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.animate-wireframe-breathe {
+  animation: wireframe-breathe 3.5s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {

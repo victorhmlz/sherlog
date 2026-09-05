@@ -1,6 +1,6 @@
 # SHERLOG — DEVELOPMENT STATE
 
-**Version:** 0.15.0
+**Version:** 0.15.1
 
 **Current phase:** PHASE 3 — ON-CHAIN
 
@@ -9,6 +9,21 @@
 **Project status:** COMPLETED
 
 ## Completed
+
+- **Redesign, pass 1 (not a numbered roadmap task):** visual language
+  inspired by genesisblockchain.io (pure-black canvas, gradient-stroke
+  wireframe geometry), recolored into Sherlog's green. `app/
+  globals.css` moved `bg` to true black + added `--color-wireframe-
+  start`/`-end` tokens; new `components/ui/WireframeIcon.js` (isometric
+  cube, green gradient); applied so far to `DashboardHeader.js` (modest
+  type-weight bump) and `TokenNotFound.js` (full empty-state redesign)
+  as an approval checkpoint before extending further — see CHANGELOG
+  0.15.1. `negative`/`warning` unchanged; scope is color/typography/one
+  new icon component only, no data or logic changes. `npm run lint`/
+  `build` pass; contrast re-verified (every pair improved vs. the
+  prior near-black); confirmed in compiled CSS and rendered HTML. Not
+  verified visually (no browser in this sandbox) — awaiting the
+  project owner's review before converting more screens.
 
 - TASK 14 — HOLDER ANALYSIS: new `lib/chain/holders.js` — reads real
   ERC-20 `Transfer` events and reconstructs holder balances, computing

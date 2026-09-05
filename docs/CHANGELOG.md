@@ -1,5 +1,83 @@
 # CHANGELOG
 
+## 0.15.1 — Redesign, pass 1 (Genesis Block-inspired visual language)
+
+Not a numbered roadmap task — a visual/design pass requested directly.
+Inspired by genesisblockchain.io's pure-black canvas and gradient-
+stroke wireframe geometry, recolored from that site's cyan-to-violet
+into Sherlog's own green. Explicitly scoped as design/color/typography
+only — no data, routing, or business logic changed anywhere in this
+patch. First pass, covering the dashboard header and one empty-state
+screen as agreed with the project owner before extending further.
+
+### Changed
+- `app/globals.css`: `--color-bg` moved to true black (`#000000`, was
+  `#0a0a0b`) — strictly higher-contrast against every existing text/
+  semantic color (verified via WCAG ratios, not eyeballed; every pair
+  improved, none regressed). `--color-surface`/`--color-surface-
+  elevated`/`--color-line`/`--color-line-strong` retuned slightly to
+  read correctly against the new pure-black base. Two new tokens,
+  `--color-wireframe-start` (`#0f5c2e`) and `--color-wireframe-end`
+  (`#3ad35c`) — the two-stop gradient for the new geometric icon
+  system, kept separate from `--color-accent` since they're for a
+  specific decorative element, not general UI accenting.
+  `negative`/`warning` (red/amber) UNCHANGED — still the app's only
+  non-green colors, still reserved for risk signals, per the original
+  rebrand's own reasoning.
+- New `@keyframes wireframe-breathe` + `.animate-wireframe-breathe` —
+  a slow (3.5s), subtle opacity pulse for the new icon. One
+  orchestrated motion moment for empty-state screens, not hover
+  effects scattered across every element; already covered by the
+  existing global `prefers-reduced-motion` rule.
+- `components/dashboard/DashboardHeader.js`: page title bumped from
+  `text-lg font-semibold` to `text-xl font-bold` — a modest increase,
+  not a full hero treatment, since this screen's vertical space mostly
+  belongs to the opportunities table.
+- `components/token/TokenNotFound.js`: redesigned as one of the app's
+  "moment" screens — the new `WireframeIcon` + a bold `text-3xl`/
+  `text-4xl` headline + supporting text, replacing the old dashed-
+  border placeholder box (a generic empty-state pattern this redesign
+  moves away from).
+
+### Added
+- `components/ui/WireframeIcon.js` — an isometric wireframe cube with
+  a green gradient stroke (SVG, `aria-hidden`), inspired by Genesis
+  Block's hero cube. Deliberately reserved for empty-state "moment"
+  screens (per this project's own restraint principle: spend
+  boldness in one place) — not reused as decoration on data-dense
+  screens like the dashboard table or token detail panels.
+
+### Verification
+- `npm run lint` / `npm run build` — PASS; route table unchanged.
+- Contrast re-verified for the new pure-black `bg` against every
+  existing text/semantic color — every pair improved versus the prior
+  `#0a0a0b` base (pure black can only raise contrast against a fixed
+  foreground), none regressed.
+- Confirmed in compiled CSS: `--color-bg: #000`, `--color-wireframe-
+  start: #0f5c2e`, `--color-wireframe-end: #3ad35c` all present.
+  Confirmed in rendered HTML: `/token/doesnotexist` contains the new
+  4-path wireframe cube SVG and the bold heading classes; `/dashboard`
+  and `/token/doesnotexist` both return `200` with no server errors.
+- **Not verified visually** — no browser/screenshot capability in this
+  sandbox. All of the above confirms structural/contrast correctness,
+  not "does it look good." The project owner will review this pass
+  before further screens are converted to the new visual language.
+
+### Decisions
+- No dependencies added.
+- Scope deliberately limited to 2 screens (dashboard header, token-
+  not-found) as an approval checkpoint, per explicit agreement with
+  the project owner, before extending the same treatment to
+  `AnalyticsUnavailable`, the remaining `RoutePlaceholder` screens
+  (Scanner/Signals/Watchlist/Paper Trading/Settings), and any other
+  empty states.
+- The dashboard's dense data table/panels keep their existing border
+  treatment — Genesis Block's borderless, floating-content look suits
+  a one-page marketing site, not an 8-column live data table, where
+  some visual separation between rows/panels is functional, not
+  decorative. This distinction was discussed with the project owner
+  before starting.
+
 ## 0.15.0 — TASK 14 (Holder Analysis)
 
 **Read this before using the numbers this produces for anything:**
