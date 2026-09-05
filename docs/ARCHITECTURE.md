@@ -205,8 +205,12 @@ TASK 00.
   swap-log indexing (real buy/sell/volume figures for a known pool
   address) implemented in TASK 13 (`lib/chain/swaps.js`) — V3 pools,
   pool discovery, and USD conversion are explicitly out of scope there.
-  Holder analysis and liquidity/price (pool) discovery are NOT
-  implemented — TASK 14–15.
+  ERC-20 Transfer-log holder-concentration analysis implemented in
+  TASK 14 (`lib/chain/holders.js`) — accurate only when indexed from at
+  or before the token's deployment block; a recent starting block
+  yields a net-accumulation figure, not current concentration (see
+  that module's own extensive comment). Liquidity/price (pool)
+  discovery is NOT implemented — TASK 15.
 - Long adapter: auction data (progress, expected progress, efficiency).
   Not implemented — TASK 16–17. No scraping; only documented/authorized
   APIs.

@@ -1,15 +1,43 @@
 # SHERLOG — DEVELOPMENT STATE
 
-**Version:** 0.14.0
+**Version:** 0.15.0
 
 **Current phase:** PHASE 3 — ON-CHAIN
 
-**Current task:** TASK 13 — SWAP INDEXING
+**Current task:** TASK 14 — HOLDER ANALYSIS
 
 **Project status:** COMPLETED
 
 ## Completed
 
+- TASK 14 — HOLDER ANALYSIS: new `lib/chain/holders.js` — reads real
+  ERC-20 `Transfer` events and reconstructs holder balances, computing
+  `top1Pct`/`top5Pct`/`top10Pct` concentration with exact `BigInt`
+  math (never float division of large token amounts).
+  `fetchTransferLogs`/`computeBalanceDeltas`/`computeHolderConcentration`/
+  `indexHolderDistribution` — first real source for `MarketSnapshot`'s
+  holder fields. **Critical accuracy caveat, documented prominently in
+  code and enforced in the debug route**: this only reflects real
+  current concentration if `fromBlock` covers the token's full history
+  (at/before deployment) — a recent `fromBlock` measures net
+  accumulation/distribution during that window only, a different
+  (still useful, but different) thing.
+  `app/api/debug/holder-index` requires `fromBlock` explicitly (no
+  silent default, unlike TASK 13's swap-index) for exactly this
+  reason. No pagination across `getLogs` calls (same posture as
+  TASK 13) — works well for a young/quiet token, hits public RPC
+  range limits for an old heavily-traded one; a real paginated indexer
+  is separate infrastructure work. No dependencies added — built
+  entirely on TASK 12's `getEvmClient`. `npm run lint`/`build` pass;
+  the two pure functions verified offline against 5 scenarios (mint +
+  partial transfer, 20 evenly-distributed holders — exact 5/25/50%,
+  mint + burn, zero logs → `null` not a crash, fewer-than-10-holders
+  edge case). `/api/debug/holder-index` manually verified: all 3
+  required-param validations correct, a fully-specified request
+  reached the real RPC call before this sandbox's familiar network
+  restriction. **Not verified against a real token's transfer
+  history** — please hit `/api/debug/holder-index` yourself with a
+  small/young token and its real deployment block.
 - TASK 13 — SWAP INDEXING: new `lib/chain/swaps.js` — reads real
   `Swap` events from a Uniswap V2-shaped pool (the ABI most V2-style
   DEX forks across all 4 chains clone byte-for-byte; V3 explicitly out
@@ -411,10 +439,10 @@
 
 ## In progress
 
-- Please hit `/api/debug/swap-index` yourself with a real pool address
-  (any token on dexscreener.com will show one) and confirm the buy/
-  sell/volume numbers look sane — see TASK 13's Verification notes
-  above. Nothing else beyond TASK 13 scope is in progress.
+- Please hit `/api/debug/holder-index` yourself with a small/young
+  token and its real deployment block as `fromBlock` — see TASK 14's
+  Verification notes above. Nothing else beyond TASK 14 scope is in
+  progress.
 
 ## Known issues
 
@@ -512,21 +540,20 @@ filled in when those integrations are actually built.
   dashboard/token-detail pages still read `mocks/tokens.js` exclusively
   and remain completely unaffected. TASK 12 added real, read-only EVM
   RPC access (`lib/chain/`) — the first real (non-mock) data source in
-  the project. TASK 13 added real swap-log indexing on top of it
-  (`lib/chain/swaps.js`) — real buy/sell/volume figures are now
-  computable for a KNOWN pool address, but nothing reads through
-  either yet; pool discovery (given a token, which pool to index) is
-  still TASK 15, and holder/concentration data is still TASK 14. There
-  is still no Long/Fomo integration, real WebSocket/SSE connection,
-  wallet connection, or trading execution of any kind. Auction data,
-  holders, and top-10 concentration remain static mock fixtures
-  throughout.
+  the project. TASK 13 added real swap-log indexing (buy/sell/volume
+  for a known pool). TASK 14 added real holder-concentration analysis
+  (`lib/chain/holders.js`) — accurate only when `fromBlock` covers a
+  token's full history, see that task's caveat. Nothing reads through
+  any of `lib/chain/` yet. Pool discovery (given a token, which pool to
+  index) is still TASK 15. There is still no Long/Fomo integration,
+  real WebSocket/SSE connection, wallet connection, or trading
+  execution of any kind. Auction data remains a static mock fixture.
 
 ## Next task
 
-TASK 14 — HOLDER ANALYSIS (not started; do not proceed automatically).
-The remaining piece before TASK 15 (liquidity/price discovery) can
-assemble a full real `NormalizedTokenData` — reads token holder
-distribution (top1/top5/top10 concentration) from chain data, likely
-via `Transfer` event indexing similar in spirit to TASK 13's `Swap`
-indexing.
+TASK 15 — LIQUIDITY ANALYSIS (not started; do not proceed
+automatically). Closes PHASE 3 — pool discovery (given a token
+address, find its liquidity pool(s)) and price/liquidity-depth
+computation from pool reserves, likely combining with TASK 13's swap
+indexing (a token's most-active pool is a reasonable discovery
+heuristic) to finally assemble a real `NormalizedTokenData`.

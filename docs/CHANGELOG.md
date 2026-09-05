@@ -1,5 +1,92 @@
 # CHANGELOG
 
+## 0.15.0 — TASK 14 (Holder Analysis)
+
+**Read this before using the numbers this produces for anything:**
+holder concentration computed here is only "current, real concentration"
+if `fromBlock` covers the token's full transfer history (at/before its
+deployment block). A recent `fromBlock` instead measures net
+accumulation/distribution *during that window*, not current holdings —
+a real, important distinction, not a footnote. `/api/debug/holder-index`
+requires `fromBlock` explicitly for exactly this reason (no default,
+unlike TASK 13's swap-index).
+
+### Added
+- `lib/chain/holders.js` — reads real ERC-20 `Transfer` events and
+  reconstructs holder balances from them — the first real, non-mock
+  source for `MarketSnapshot`'s `holders`/`top1Pct`/`top5Pct`/
+  `top10Pct` fields (docs/ARCHITECTURE.md §5).
+  - `fetchTransferLogs(chainKey, tokenAddress, { fromBlock, toBlock })`
+    — `eth_getLogs` for the standard ERC-20 `Transfer` event (identical
+    across every compliant token — no V2/V3-style ambiguity here,
+    unlike TASK 13's `Swap` event).
+  - `computeBalanceDeltas(logs)` — pure, network-free: nets out
+    `from`/`to` transfers into a `Map<address, balance>`, correctly
+    handling mints (`from = 0x0`) and burns (`to = 0x0`) by only
+    crediting/debiting the non-zero side.
+  - `computeHolderConcentration(balances)` — pure: filters to positive
+    balances (that's "holders"), ranks them, and computes
+    `top1Pct`/`top5Pct`/`top10Pct` using exact integer math (scaled
+    `BigInt` division, converted to a display number only at the very
+    end) — never floating-point division of huge token-amount
+    `BigInt`s. Returns `null` percentages (not `NaN`/a crash) when
+    total supply is zero.
+  - `indexHolderDistribution(chainKey, tokenAddress, { fromBlock,
+    toBlock })` — the above 3 steps combined.
+- `app/api/debug/holder-index` — manual verification endpoint;
+  `?chain=&token=&fromBlock=&toBlock=`. `fromBlock` is REQUIRED (no
+  silent default) — see the accuracy note above; defaulting to "recent"
+  would invite reading a partial-window result as absolute
+  concentration. Not called by anything else in the app.
+
+### Verification
+- `npm run lint` / `npm run build` — PASS; `/api/debug/holder-index`
+  compiles as a dynamic route.
+- `computeBalanceDeltas`/`computeHolderConcentration` verified offline
+  (pure functions, no network) against 5 scenarios: a mint followed by
+  a partial transfer (`top1Pct: 70`, exact); 20 evenly-distributed
+  holders (`top1Pct: 5`, `top5Pct: 25`, `top10Pct: 50` — exact
+  fractions, confirming the integer math has no rounding drift for a
+  clean case); a mint followed by a burn (total supply correctly
+  shrinks, remaining holder at `100`); zero logs (`holderCount: 0`,
+  percentages `null`, no divide-by-zero crash); fewer than 10 holders
+  total (`top10Pct` correctly caps at `100`, doesn't error on slicing
+  past the array's end).
+- `/api/debug/holder-index` manually verified against the running dev
+  server: missing `chain`/`token`/`fromBlock` each produce the correct,
+  specific `400`; a fully-specified request against a real chain
+  (`ETH`) reaches the real RPC call (confirmed via the `eth_blockNumber`
+  call for the default `toBlock`) before hitting this sandbox's
+  now-familiar network restriction (`403 Host not in allowlist:
+  ethereum.reth.rs`) — not the code's fault. `/dashboard` unaffected.
+- **Not verified against a real token's actual transfer history** —
+  needs a real token address and a real deployment-block number, which
+  this sandbox can't reach regardless. Please hit
+  `/api/debug/holder-index` yourself; for a trustworthy result, use a
+  small/young token and set `fromBlock` to at or before its deployment
+  block (visible on its block explorer page) rather than an arbitrary
+  recent block.
+
+### Decisions
+- No dependencies added — built entirely on TASK 12's `getEvmClient`.
+- No pagination across multiple `getLogs` calls — same posture as
+  TASK 13. For an old, heavily-traded token, indexing from deployment
+  may mean millions of transfers over a huge block range, which will
+  hit most public RPC providers' range/response limits long before
+  reaching "latest." This works well for a young/quiet token; a
+  properly paginated, resumable indexer for an established one is
+  real, separate infrastructure work, not attempted here.
+- Negative reconstructed balances (which would indicate the given
+  block range doesn't cover a complete history for that address) are
+  simply excluded from the holder count/ranking, not corrected or
+  flagged specially — the module-level documentation is the guardrail
+  against misreading a partial-window result, not runtime detection.
+- Percentages use exact `BigInt` arithmetic (scale-then-divide) rather
+  than converting large token-amount `BigInt`s to floating-point
+  before dividing — token amounts routinely exceed
+  `Number.MAX_SAFE_INTEGER`, where float division would silently lose
+  precision.
+
 ## 0.14.0 — TASK 13 (Swap Indexing)
 
 ### Added
