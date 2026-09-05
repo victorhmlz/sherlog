@@ -12,7 +12,7 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden w-56 shrink-0 border-r border-line bg-surface md:flex md:flex-col">
+    <aside className="border-wireframe-r hidden w-56 shrink-0 md:flex md:flex-col">
       <nav aria-label="Primary" className="flex flex-1 flex-col gap-0.5 p-3">
         {NAV_ITEMS.map((item) => {
           const isActive = pathname.startsWith(item.href);

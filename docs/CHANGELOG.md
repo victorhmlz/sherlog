@@ -1,5 +1,67 @@
 # CHANGELOG
 
+## 0.15.2 — Redesign, pass 2 (all-black surfaces, gradient-stroke edges)
+
+Not a numbered roadmap task — direct follow-up to pass 1, per the
+project owner: all backgrounds black, and borders carrying the logo's
+green gradient (bright → dark green) instead of a flat line.
+
+### Changed
+- `app/globals.css`: `--color-surface` moved to `#000000` (was a dark
+  green tint, `#0d1a10`) and `--color-surface-elevated` to `#141414`
+  (was `#122415`) — every container now fills pure black, matching
+  Genesis Block's own "content floats on black" look, where definition
+  comes from line art rather than background panels.
+  `surface-elevated` deliberately keeps a small lift over flat black
+  (a neutral near-black, not green-tinted) purely so hover/selected
+  states still give visible feedback — going fully flush with `bg`
+  would make every hover state invisible.
+- New `.border-wireframe` / `-b` / `-t` / `-r` utility classes: a
+  gradient-stroke border (bright green → dark green,
+  `--color-wireframe-end`→`-start`) using the standard double-
+  background CSS technique (plain `border-color` can't paint a
+  gradient at all; `border-image` can but breaks `border-radius`,
+  which `Card` needs). Applied to the app's STRUCTURAL panel edges:
+  `Card.js` (all 4 sides), `Topbar.js` (bottom), `Sidebar.js` (right),
+  `MobileNav.js` (top). `Divider.js` and internal table-row separators
+  deliberately keep a flat `border-line` — a gradient on every tiny
+  internal hairline would read as visual noise, not an accent; same
+  "boldness in one place" reasoning as `WireframeIcon`'s own scoping.
+
+### Verification
+- `npm run lint` / `npm run build` — PASS; route table unchanged.
+- Confirmed in compiled CSS: `--color-surface: #000`, `--color-surface-
+  elevated: #141414`, and all 4 `.border-wireframe*` rules present with
+  the correct gradient direction per side and `background-clip:
+  padding-box, border-box` (the part of this technique that makes it
+  respect `border-radius`, unlike `border-image`).
+- Confirmed in rendered HTML: all 4 utility classes appear on their
+  intended elements on `/dashboard`; no component ended up with both
+  the new utility AND a conflicting `bg-surface` class (`Card`,
+  `Topbar`, `Sidebar`, `MobileNav`'s own containers are clean — the
+  `bg-surface-elevated` still present on nav `<Link>` items is a
+  separate, correctly-scoped hover/active state on a child element,
+  not a conflict with the parent's gradient).
+- `/dashboard` and `/token/nxa` both return `200`, no server errors.
+- **Not verified visually** — same limitation as pass 1: no browser in
+  this sandbox. The gradient-border technique is a well-established,
+  correct CSS pattern, but whether it actually reads well at 1px width
+  against real content is exactly the kind of detail that needs the
+  project owner's own eyes.
+
+### Decisions
+- No dependencies added.
+- Gradient borders were NOT applied to `Divider`, table row dividers,
+  `Badge` outlines, or other small/internal hairlines — scoped to
+  panel-defining structural edges only. Flagged explicitly in case the
+  project owner wants it literally everywhere instead.
+- `surface-elevated`'s exact value (`#141414`) was chosen as a
+  deliberate, visible-but-subtle step off pure black (in the spirit of
+  Material Design's own "elevated dark surface" convention, ~`#121212`)
+  rather than a barely-perceptible one — an earlier, closer-to-black
+  candidate was rejected after checking it would make hover states
+  nearly invisible.
+
 ## 0.15.1 — Redesign, pass 1 (Genesis Block-inspired visual language)
 
 Not a numbered roadmap task — a visual/design pass requested directly.

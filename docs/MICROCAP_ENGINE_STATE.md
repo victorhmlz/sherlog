@@ -1,6 +1,6 @@
 # SHERLOG — DEVELOPMENT STATE
 
-**Version:** 0.15.1
+**Version:** 0.15.2
 
 **Current phase:** PHASE 3 — ON-CHAIN
 
@@ -10,6 +10,21 @@
 
 ## Completed
 
+- **Redesign, pass 2 (not a numbered roadmap task):** direct follow-up
+  to pass 1 per the project owner — all backgrounds black, borders
+  carry the logo's green gradient. `--color-surface`/`-elevated` moved
+  to black/near-black (were dark-green tints); new
+  `.border-wireframe`/`-b`/`-t`/`-r` utility classes (double-background
+  CSS gradient-border technique, respects `border-radius` unlike
+  `border-image`) applied to structural panel edges only — `Card`,
+  `Topbar`, `Sidebar`, `MobileNav` — while `Divider`/table dividers
+  deliberately keep a flat line (avoid visual noise on every internal
+  hairline). See CHANGELOG 0.15.2 for the full reasoning and the exact
+  `surface-elevated` value chosen for visible hover feedback. `npm run
+  lint`/`build` pass; confirmed in compiled CSS (all 4 gradient rules
+  present, correct direction per side) and rendered HTML (utilities on
+  the right elements, no conflicting `bg-surface` left behind). Not
+  verified visually — same sandbox limitation as pass 1.
 - **Redesign, pass 1 (not a numbered roadmap task):** visual language
   inspired by genesisblockchain.io (pure-black canvas, gradient-stroke
   wireframe geometry), recolored into Sherlog's green. `app/

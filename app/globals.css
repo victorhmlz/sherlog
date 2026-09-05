@@ -21,13 +21,27 @@
  * restraint principle (spend boldness in one place).
  * `negative`/`warning` remain UNCHANGED from the original rebrand —
  * still the app's only red/amber, still reserved for risk signals.
+ *
+ * Pass 2: `surface`/`surface-elevated` also moved to black (were dark
+ * green tints) — every container now fills pure black, matching
+ * Genesis Block's own "content floats on black" look, where
+ * definition comes from line art, not background panels.
+ * `surface-elevated` keeps a hair of lift (`#141414`, a deliberately
+ * neutral near-black — not `#000000` flat, and no longer green-tinted)
+ * purely so hover/selected states still give visible feedback.
+ * Structural panel EDGES (Card, Topbar, Sidebar, MobileNav) now use
+ * the `.border-wireframe*` gradient-stroke utilities below instead of
+ * a flat `border-line` — see their comment for why plain CSS
+ * `border-color` can't do this and internal hairline dividers
+ * (`Divider`, table row separators) deliberately still use flat
+ * `border-line`, not the gradient.
  * --------------------------------------------------------------------- */
 
 :root {
   /* Surfaces */
   --color-bg: #000000;
-  --color-surface: #0d1a10;
-  --color-surface-elevated: #122415;
+  --color-surface: #000000;
+  --color-surface-elevated: #141414;
   --color-line: #1a2e1e;
   --color-line-strong: #234029;
 
@@ -166,6 +180,64 @@ body {
 
 .animate-wireframe-breathe {
   animation: wireframe-breathe 3.5s ease-in-out infinite;
+}
+
+/* -----------------------------------------------------------------------
+ * Gradient-stroke ("wireframe") borders — redesign pass 2.
+ *
+ * Plain CSS `border-color` can't paint a gradient; this uses the
+ * standard double-background technique instead: one opaque layer
+ * clipped to the padding-box (the fill — always `--color-surface`,
+ * i.e. black) sits under a second gradient layer clipped to the
+ * border-box, which then only shows through in the border's own
+ * width. Unlike `border-image`, this respects `border-radius`
+ * correctly, so it works fine on Card's rounded corners.
+ *
+ * Reserved for STRUCTURAL panel edges (Card, Topbar, Sidebar,
+ * MobileNav) — the boundaries that define a whole container. Internal
+ * hairline dividers (`Divider`, table row separators) deliberately
+ * keep a flat `border-line` instead: a gradient on every tiny internal
+ * rule would read as visual noise, not an accent — the same
+ * "boldness in one place" reasoning as `WireframeIcon`'s scoping.
+ *
+ * Because the fill is baked into `background-image` here, an element
+ * using one of these should NOT also set `bg-surface`/`bg-*` — that
+ * would just be painted over.
+ * --------------------------------------------------------------------- */
+.border-wireframe {
+  border: 1px solid transparent;
+  background-image:
+    linear-gradient(var(--color-surface), var(--color-surface)),
+    linear-gradient(135deg, var(--color-wireframe-end), var(--color-wireframe-start));
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
+
+.border-wireframe-b {
+  border-bottom: 1px solid transparent;
+  background-image:
+    linear-gradient(var(--color-surface), var(--color-surface)),
+    linear-gradient(90deg, var(--color-wireframe-end), var(--color-wireframe-start));
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
+
+.border-wireframe-t {
+  border-top: 1px solid transparent;
+  background-image:
+    linear-gradient(var(--color-surface), var(--color-surface)),
+    linear-gradient(90deg, var(--color-wireframe-start), var(--color-wireframe-end));
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
+
+.border-wireframe-r {
+  border-right: 1px solid transparent;
+  background-image:
+    linear-gradient(var(--color-surface), var(--color-surface)),
+    linear-gradient(180deg, var(--color-wireframe-end), var(--color-wireframe-start));
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -15,7 +15,7 @@ export default function MobileNav() {
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-20 flex gap-1 overflow-x-auto border-t border-line bg-surface px-2 py-2 md:hidden"
+      className="border-wireframe-t fixed inset-x-0 bottom-0 z-20 flex gap-1 overflow-x-auto px-2 py-2 md:hidden"
     >
       {NAV_ITEMS.map((item) => {
         const isActive = pathname.startsWith(item.href);

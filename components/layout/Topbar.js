@@ -8,7 +8,7 @@ import LiveIndicator from "@/components/ui/LiveIndicator";
  */
 export default function Topbar() {
   return (
-    <header className="flex h-12 shrink-0 items-center justify-between border-b border-line bg-surface px-4">
+    <header className="border-wireframe-b flex h-12 shrink-0 items-center justify-between px-4">
       <div className="flex items-center gap-3">
         <Image
           src="/logo.png"
